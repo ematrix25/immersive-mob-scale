@@ -1,4 +1,4 @@
-package com.example;
+package com.ematrix25.immersivemobscale;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -8,8 +8,8 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.entity.EntityType;
 
-public class ExampleMod implements ModInitializer {
-	public static final String MOD_ID = "modid";
+public class Main implements ModInitializer {
+	public static final String MOD_ID = "immersivemobscale";
 
 	// This logger is used to write text to the console and the log file.
 	// It is considered best practice to use your mod id as the logger's name.

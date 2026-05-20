@@ -1,9 +1,9 @@
 {
 	"required": true,
-	"package": "com.example.client.mixin",
+	"package": "com.ematrix25.immersivemobscale.mixin",
 	"compatibilityLevel": "JAVA_25",
-	"client": [
-		"ExampleClientMixin"
+	"mixins": [
+		"EntityRendererMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

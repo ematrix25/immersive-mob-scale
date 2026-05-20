@@ -1,31 +1,31 @@
 {
 	"schemaVersion": 1,
-	"id": "modid",
+	"id": "immersivemobscale",
 	"version": "${version}",
-	"name": "Example Mod",
-	"description": "This is an example description! Tell everyone what your mod is about!",
+	"name": "Immersive Mob Scale",
+	"description": "This is a mod for a more immersive scale of mobs to make creature proportions more realistic.",
 	"authors": [
-		"Me!"
+		"ematrix25"
 	],
 	"contact": {
 		"homepage": "https://fabricmc.net/",
 		"sources": "https://github.com/FabricMC/fabric-example-mod"
 	},
 	"license": "CC0-1.0",
-	"icon": "assets/modid/icon.png",
+	"icon": "assets/immersivemobscale/icon.png",
 	"environment": "*",
 	"entrypoints": {
 		"main": [
-			"com.example.ExampleMod"
+			"com.ematrix25.immersivemobscale.Main"
 		],
 		"client": [
-			"com.example.client.ExampleModClient"
+			"com.ematrix25.immersivemobscale.Client"
 		]
 	},
 	"mixins": [
-		"modid.mixins.json",
+		"immersivemobscale.mixins.json",
 		{
-			"config": "modid.client.mixins.json",
+			"config": "immersivemobscale.client.mixins.json",
 			"environment": "client"
 		}
 	],
