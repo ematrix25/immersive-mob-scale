@@ -7,7 +7,14 @@ classes/
 
 # eclipse
 
+.metadata/
+bin/
 *.launch
+
+# IntelliJ
+
+.idea/
+*.iml
 
 # idea
 
@@ -24,6 +31,11 @@ bin/
 .classpath
 .project
 
+# OS
+
+.DS_Store
+Thumbs.db
+
 # macos
 
 *.DS_Store
@@ -31,6 +43,8 @@ bin/
 # fabric
 
 run/
+logs/
+*.log
 
 # java
 
