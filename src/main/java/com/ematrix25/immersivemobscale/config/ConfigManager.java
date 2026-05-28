@@ -19,13 +19,15 @@ import com.ematrix25.immersivemobscale.scale.EntityScaleCategory;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
+import net.minecraft.resources.Identifier;
+
 /**
  * Manages creation, loading and validation of configuration files.
  */
 public class ConfigManager {
 	private static final String DEFAULT_DIR_NAME = "/default_config/";
 	private static final Gson GSON = new Gson();
-	private static final Map<String, Object> LOADED_CONFIG = new HashMap<>();
+	private static final Map<ConfigType, Object> LOADED_CONFIG = new HashMap<>();
 	private static final Logger LOGGER = LoggerFactory.getLogger(ConfigManager.class);
 
 	private static Path configDir;
@@ -69,7 +71,7 @@ public class ConfigManager {
 		/**
 		 * Gets configuration loaded object type.
 		 * 
-		 * @return
+		 * @return configuration object type
 		 */
 		public Type getType() {
 			return type;
@@ -136,7 +138,7 @@ public class ConfigManager {
 			T config = GSON.fromJson(Files.readString(file), configType.getType());
 
 			validate(configType, config);
-			LOADED_CONFIG.put(configType.getKey(), config);
+			LOADED_CONFIG.put(configType, config);
 			LOGGER.info("Loaded config: {}", configType.getKey());
 		} catch (Exception exception) {
 			LOGGER.error("Failed to load config: {}", configType.getKey(), exception);
@@ -163,7 +165,7 @@ public class ConfigManager {
 	 * @param categories
 	 */
 	private static void validateCategories(Map<String, EntityScaleCategory> categories) {
-		Set<String> registeredEntities = new HashSet<>();
+		Set<Identifier> registeredEntities = new HashSet<>();
 
 		categories.forEach((name, category) -> {
 			if (category.scale() < 0.10f || category.scale() > 5.00f)
@@ -177,9 +179,10 @@ public class ConfigManager {
 				return;
 			}
 			for (String entity : category.entities()) {
-				if (!entity.contains(":"))
+				Identifier entityId = Identifier.tryParse(entity);
+				if (entityId == null)
 					LOGGER.warn("Category {} has invalid entity id {}", name, entity);
-				else if (!registeredEntities.add(entity))
+				else if (!registeredEntities.add(entityId))
 					LOGGER.warn("Category {} has a duplicate entity {}", name, entity);
 			}
 		});
@@ -194,6 +197,6 @@ public class ConfigManager {
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> T getConfig(ConfigType configType) {
-		return (T) LOADED_CONFIG.get(configType.getKey());
+		return (T) LOADED_CONFIG.get(configType);
 	}
 }
