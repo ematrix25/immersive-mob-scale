@@ -28,7 +28,7 @@ public class ConfigManager {
 	private static final String DEFAULT_DIR_NAME = "/default_config/";
 	private static final Gson GSON = new Gson();
 	private static final Map<ConfigType, Object> LOADED_CONFIG = new HashMap<>();
-	private static final Logger LOGGER = LoggerFactory.getLogger(ConfigManager.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(Main.MOD_ID);
 
 	private static Path configDir;
 
@@ -98,12 +98,13 @@ public class ConfigManager {
 		try {
 			if (Files.notExists(configDir)) {
 				Files.createDirectories(configDir);
-				LOGGER.info("Configuration directory initialized at {}", configDir);
+				if (Main.DEBUG_LOGGING)
+					LOGGER.info("Configuration directory initialized at {}", configDir);
 			}
 			if (Files.notExists(file))
 				createDefaultFile(fileName, file);
-
-			LOGGER.info("Config system initialized");
+			if (Main.DEBUG_LOGGING)
+				LOGGER.info("Config system initialized");
 		} catch (IOException exception) {
 			LOGGER.error("Failed to initialize config system", exception);
 		}
@@ -122,7 +123,8 @@ public class ConfigManager {
 			if (inputStream == null)
 				throw new IOException("Missing resource: " + resourcePath);
 			Files.copy(inputStream, outputFile, StandardCopyOption.REPLACE_EXISTING);
-			LOGGER.info("Created default config file: {}", outputFile.getFileName());
+			if (Main.DEBUG_LOGGING)
+				LOGGER.info("Created default config file: {}", outputFile.getFileName());
 		}
 	}
 
@@ -139,7 +141,8 @@ public class ConfigManager {
 
 			validate(configType, config);
 			LOADED_CONFIG.put(configType, config);
-			LOGGER.info("Loaded config: {}", configType.getKey());
+			if (Main.DEBUG_LOGGING)
+				LOGGER.info("Loaded config: {}", configType.getKey());
 		} catch (Exception exception) {
 			LOGGER.error("Failed to load config: {}", configType.getKey(), exception);
 		}
@@ -198,5 +201,21 @@ public class ConfigManager {
 	@SuppressWarnings("unchecked")
 	public static <T> T getConfig(ConfigType configType) {
 		return (T) LOADED_CONFIG.get(configType);
+	}
+
+	/**
+	 * Gets category name from the respective category object.
+	 * 
+	 * @param category
+	 * @return category name
+	 */
+	public static String getCategoryName(EntityScaleCategory category) {
+		Map<String, EntityScaleCategory> categories = getConfig(ConfigType.CATEGORIES);
+
+		for (Map.Entry<String, EntityScaleCategory> entry : categories.entrySet())
+			if (entry.getValue().equals(category))
+				return entry.getKey();
+
+		return "unknown";
 	}
 }
