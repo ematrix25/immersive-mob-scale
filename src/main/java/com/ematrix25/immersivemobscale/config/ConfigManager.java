@@ -98,12 +98,12 @@ public class ConfigManager {
 		try {
 			if (Files.notExists(configDir)) {
 				Files.createDirectories(configDir);
-				if (Main.DEBUG_LOGGING)
+				if (Main.debugLogging)
 					LOGGER.info("Configuration directory initialized at {}", configDir);
 			}
 			if (Files.notExists(file))
 				createDefaultFile(fileName, file);
-			if (Main.DEBUG_LOGGING)
+			if (Main.debugLogging)
 				LOGGER.info("Config system initialized");
 		} catch (IOException exception) {
 			LOGGER.error("Failed to initialize config system", exception);
@@ -123,7 +123,7 @@ public class ConfigManager {
 			if (inputStream == null)
 				throw new IOException("Missing resource: " + resourcePath);
 			Files.copy(inputStream, outputFile, StandardCopyOption.REPLACE_EXISTING);
-			if (Main.DEBUG_LOGGING)
+			if (Main.debugLogging)
 				LOGGER.info("Created default config file: {}", outputFile.getFileName());
 		}
 	}
@@ -141,7 +141,7 @@ public class ConfigManager {
 
 			validate(configType, config);
 			LOADED_CONFIG.put(configType, config);
-			if (Main.DEBUG_LOGGING)
+			if (Main.debugLogging)
 				LOGGER.info("Loaded config: {}", configType.getKey());
 		} catch (Exception exception) {
 			LOGGER.error("Failed to load config: {}", configType.getKey(), exception);

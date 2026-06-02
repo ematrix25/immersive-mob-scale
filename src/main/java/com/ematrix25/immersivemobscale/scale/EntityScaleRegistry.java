@@ -28,12 +28,13 @@ public class EntityScaleRegistry {
 		if (categories == null)
 			return;
 
+		ENTITY_CATEGORIES.clear();
 		categories.forEach((name, category) -> {
 			if (category.entities() == null || category.entities().isEmpty())
 				return;
 			for (String entity : category.entities())
 				ENTITY_CATEGORIES.put(Identifier.parse(entity), category);
-			if (Main.DEBUG_LOGGING)
+			if (Main.debugLogging)
 				LOGGER.info("Registered {} entities to category {}", category.entities().size(), name);
 		});
 	}

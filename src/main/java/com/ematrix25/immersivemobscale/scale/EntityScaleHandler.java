@@ -46,7 +46,7 @@ public class EntityScaleHandler {
 		if (healthAttribute != null)
 			entity.setHealth((float) healthAttribute.getValue());
 
-		if (Main.DEBUG_LOGGING)
+		if (Main.debugLogging)
 			LOGGER.info("Applying scale category '{}' {} to entity {}", ConfigManager.getCategoryName(category),
 					category, entityId);
 	}
