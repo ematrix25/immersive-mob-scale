@@ -79,13 +79,6 @@ public class ConfigManager {
 	}
 
 	/**
-	 * Starts ConfigManager with default Main folder.
-	 */
-	public static void initialize() {
-		initialize(Main.CONFIG_DIR);
-	}
-
-	/**
 	 * Starts ConfigManager with the given folder.
 	 * 
 	 * @param configDir
@@ -217,5 +210,14 @@ public class ConfigManager {
 				return entry.getKey();
 
 		return "unknown";
+	}
+	
+	/**
+	 * Gets the number of loaded configurations.
+	 *
+	 * @return loaded configuration count
+	 */
+	public static int getLoadedConfigCount() {
+		return LOADED_CONFIG.size();
 	}
 }

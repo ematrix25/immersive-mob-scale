@@ -64,6 +64,6 @@ public class ConfigManagerTest extends BaseTest {
 
 		assertEquals(0.10f, insects.scale());
 		assertEquals(1.30f, insects.speed());
-		assertEquals("minecraft:silverfish", insects.entities().get(0));
+		assertEquals("minecraft:silverfish", insects.entities().iterator().next());
 	}
 }

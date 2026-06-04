@@ -13,9 +13,7 @@ import com.ematrix25.immersivemobscale.scale.EntityScaleRegistry;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.entity.Entity;
+import net.fabricmc.loader.api.Version;
 import net.minecraft.world.entity.LivingEntity;
 
 /**
@@ -23,7 +21,6 @@ import net.minecraft.world.entity.LivingEntity;
  */
 public class Main implements ModInitializer {
 	public static final String MOD_ID = "immersivemobscale", MOD_NAME = "Immersive Mob Scale";
-	public static final Path CONFIG_DIR = FabricLoader.getInstance().getConfigDir().resolve(MOD_ID);
 	private static final Logger LOGGER = LoggerFactory.getLogger(Main.MOD_ID);
 
 	public static boolean debugLogging = true;
@@ -33,16 +30,10 @@ public class Main implements ModInitializer {
 	 */
 	@Override
 	public void onInitialize() {
-		ConfigManager.initialize();
+		ConfigManager.initialize(getConfigDir());
 		ConfigManager.loadConfig(ConfigManager.ConfigType.CATEGORIES);
 		EntityScaleRegistry.initialize();
 		CommandManager.register();
-
-		CommandManager.registerSubCommand("reload", source -> reload(source.getServer()),
-				_ -> MOD_NAME + " configuration reloaded");
-		CommandManager.registerSubCommand("debug", _ -> toggleDebug(),
-				_ -> "Debug logging " + (debugLogging ? "enabled" : "disabled"));
-		CommandManager.registerSubCommand("version", _ -> MOD_NAME + " " + getVersion());
 
 		ServerEntityEvents.ENTITY_LOAD.register((entity, _) -> {
 			if (entity instanceof LivingEntity livingEntity)
@@ -52,32 +43,20 @@ public class Main implements ModInitializer {
 	}
 
 	/**
-	 * Reloads configuration files and reapplies categories to loaded entities.
-	 * 
-	 * @param server
+	 * Gets the configuration directory.
+	 *
+	 * @return configuration directory
 	 */
-	public static void reload(MinecraftServer server) {
-		ConfigManager.loadConfig(ConfigManager.ConfigType.CATEGORIES);
-		EntityScaleRegistry.initialize();
-
-		for (ServerLevel level : server.getAllLevels())
-			for (Entity entity : level.getAllEntities())
-				if (entity instanceof LivingEntity livingEntity)
-					EntityScaleHandler.apply(livingEntity);
-		LOGGER.info("Reloaded configuration and reapplied entity categories");
-	}
-
-	/**
-	 * Toggle to hide or show debug messages.
-	 */
-	public static void toggleDebug() {
-		debugLogging = !debugLogging;
+	public static Path getConfigDir() {
+		return FabricLoader.getInstance().getConfigDir().resolve(MOD_ID);
 	}
 
 	/**
 	 * Retrieves the current version.
+	 * 
+	 * @return fabric version
 	 */
-	public static String getVersion() {
-		return FabricLoader.getInstance().getModContainer(MOD_ID).get().getMetadata().getVersion().getFriendlyString();
+	public static Version getVersion() {
+		return FabricLoader.getInstance().getModContainer(Main.MOD_ID).get().getMetadata().getVersion();
 	}
 }
