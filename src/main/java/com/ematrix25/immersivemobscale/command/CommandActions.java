@@ -83,7 +83,7 @@ public class CommandActions {
 	 */
 	public static String getList(String categoryName) {
 		return "Category " + categoryName.toLowerCase() + " entities " + NEW_LINE
-				+ String.join(NEW_LINE, EntityScaleRegistry.getEntitiesNames(categoryName));
+				+ String.join(NEW_LINE, EntityScaleRegistry.getEntityNames(categoryName));
 	}
 
 	/**

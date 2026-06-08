@@ -1,6 +1,7 @@
 package com.ematrix25.immersivemobscale.scale;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -18,6 +19,7 @@ import net.minecraft.resources.Identifier;
  */
 public class EntityScaleRegistry {
 	private static final Map<Identifier, String> ENTITY_CATEGORIES = new HashMap<>();
+	private static final Set<String> ENTITY_NAMES = new HashSet<>();
 	private static final Logger LOGGER = LoggerFactory.getLogger(Main.MOD_ID);
 
 	private static Map<String, EntityScaleCategory> categories = new HashMap<>();
@@ -26,17 +28,20 @@ public class EntityScaleRegistry {
 	 * Loads entity categories into runtime registry.
 	 */
 	public static void initialize() {
+		ENTITY_CATEGORIES.clear();
+		ENTITY_NAMES.clear();
 		categories = ConfigManager.getConfig(ConfigType.CATEGORIES);
 
 		if (categories == null)
 			return;
 
-		ENTITY_CATEGORIES.clear();
 		categories.forEach((name, category) -> {
 			if (category.entities() == null || category.entities().isEmpty())
 				return;
-			for (String entity : category.entities())
+			for (String entity : category.entities()) {
 				ENTITY_CATEGORIES.put(Identifier.parse(entity), name);
+				ENTITY_NAMES.add(entity);
+			}
 			if (Main.debugLogging)
 				LOGGER.info("Registered {} entities to category {}", category.entities().size(), name);
 		});
@@ -51,7 +56,7 @@ public class EntityScaleRegistry {
 	public static EntityScaleCategory getCategory(String categoryName) {
 		return categories.get(categoryName);
 	}
-	
+
 	/**
 	 * Gets a category for specified entity id.
 	 *
@@ -73,14 +78,23 @@ public class EntityScaleRegistry {
 	}
 
 	/**
-	 * Gets all registered entities names.
+	 * Gets registered entity names for the specified category.
 	 *
-	 * @return entities names
+	 * @return category entity names
 	 */
-	public static Set<String> getEntitiesNames(String categoryName) {
+	public static Set<String> getEntityNames(String categoryName) {
 		var category = getCategory(categoryName);
 
 		return category != null ? category.entities() : Set.of();
+	}
+
+	/**
+	 * Gets all registered entity names.
+	 *
+	 * @return entity names
+	 */
+	public static Set<String> getEntityNames() {
+		return Set.copyOf(ENTITY_NAMES);
 	}
 
 	/**
@@ -89,7 +103,7 @@ public class EntityScaleRegistry {
 	 * @return category names
 	 */
 	public static Set<String> getCategoryNames() {
-		return categories.keySet();
+		return Set.copyOf(categories.keySet());
 	}
 
 	/**

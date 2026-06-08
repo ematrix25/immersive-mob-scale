@@ -4,11 +4,13 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ematrix25.immersivemobscale.Main;
+import com.ematrix25.immersivemobscale.scale.EntityScaleRegistry;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -47,9 +49,9 @@ public class CommandManager {
 		registerCommand("version", _ -> CommandActions.getVersion());
 		registerCommand("stats", _ -> CommandActions.getStats());
 		registerCommand("list", _ -> CommandActions.getList());
-		registerCommand("list", "category", CommandActions::getList);
-		registerCommand("info category", "category", CommandActions::getCategoryInfo);
-		registerCommand("info entity", "entity", CommandActions::getEntityInfo);
+		registerCommand("list", "category", EntityScaleRegistry::getCategoryNames, CommandActions::getList);
+		registerCommand("info category", "category", EntityScaleRegistry::getCategoryNames, CommandActions::getCategoryInfo);
+		registerCommand("info entity", "entity", EntityScaleRegistry::getEntityNames, CommandActions::getEntityInfo);
 	}
 
 	/**
@@ -61,7 +63,7 @@ public class CommandManager {
 	 */
 	private static void registerCommand(String cmdPath, Function<CommandSourceStack, String> msgProvider) {
 		registerCommand(cmdPath, null, context -> (CommandSourceStack) context.getSource(), _ -> {
-		}, msgProvider);
+		}, null, msgProvider);
 	}
 
 	/**
@@ -71,10 +73,10 @@ public class CommandManager {
 	 * @param argumentName
 	 * @param msgProvider
 	 */
-	private static void registerCommand(String cmdPath, String argumentName, Function<String, String> msgProvider) {
+	private static void registerCommand(String cmdPath, String argumentName, Supplier<Set<String>> suggestionsProvider, Function<String, String> msgProvider) {
 
 		registerCommand(cmdPath, argumentName, context -> StringArgumentType.getString(context, argumentName), _ -> {
-		}, msgProvider);
+		}, suggestionsProvider, msgProvider);
 	}
 
 	/**
@@ -87,20 +89,22 @@ public class CommandManager {
 	private static void registerCommand(String cmdPath, Consumer<CommandSourceStack> cmdAction,
 			Function<CommandSourceStack, String> msgProvider) {
 
-		registerCommand(cmdPath, null, context -> context.getSource(), cmdAction, msgProvider);
+		registerCommand(cmdPath, null, context -> context.getSource(), cmdAction, null, msgProvider);
 	}
 
 	/**
 	 * Registers a command under the root command.
 	 *
+	 * @param <T>
 	 * @param cmdPath
 	 * @param argumentName
+	 * @param valueProvider
 	 * @param cmdAction
 	 * @param msgProvider
 	 */
 	private static <T> void registerCommand(String cmdPath, String argumentName,
 			Function<CommandContext<CommandSourceStack>, T> valueProvider, Consumer<T> cmdAction,
-			Function<T, String> msgProvider) {
+			Supplier<Set<String>> suggestionsProvider, Function<T, String> msgProvider) {
 		if (!cmdPath.equals("help"))
 			COMMANDS.add(cmdPath);
 		if (Main.debugLogging)
@@ -115,10 +119,19 @@ public class CommandManager {
 
 		if (argumentName == null)
 			command.executes(executor);
-		else
-			command.then(Commands
-					.argument(argumentName.replaceAll(WHITESPACE, EMPTY).toLowerCase(), StringArgumentType.greedyString())
-					.executes(executor));
+		else {
+			var argument = Commands.argument(argumentName.replaceAll(WHITESPACE, EMPTY).toLowerCase(),
+					StringArgumentType.greedyString());
+			if (suggestionsProvider != null) {
+				argument.suggests((_, builder) -> {
+					suggestionsProvider.get().forEach(builder::suggest);
+
+					return builder.buildFuture();
+				});
+			}
+			argument.executes(executor);
+			command.then(argument);
+		}
 
 		for (int i = last - 1; i >= 0; i--)
 			command = Commands.literal(cmdNames[i]).then(command);
