@@ -10,6 +10,7 @@ import com.ematrix25.immersivemobscale.config.ConfigManager;
 import com.ematrix25.immersivemobscale.scale.EntityScaleHandler;
 import com.ematrix25.immersivemobscale.scale.EntityScaleRegistry;
 
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
@@ -83,6 +84,43 @@ public class CommandActions {
 	public static String getList(String categoryName) {
 		return "Category " + categoryName.toLowerCase() + " entities " + NEW_LINE
 				+ String.join(NEW_LINE, EntityScaleRegistry.getEntitiesNames(categoryName));
+	}
+
+	/**
+	 * Retrieves the data of the given category
+	 * 
+	 * @param categoryName
+	 * @return category data
+	 */
+	public static String getCategoryInfo(String categoryName) {
+		var category = EntityScaleRegistry.getCategory(categoryName);
+
+		if (category == null)
+			return "Category " + categoryName + " not found";
+
+		return String.format(
+				"Category %s" + NEW_LINE + "Entities: %d" + NEW_LINE + "Scale: %.2f" + NEW_LINE + "Speed: %.2f",
+				categoryName, category.entities().size(), category.scale(), category.speed());
+	}
+
+	/**
+	 * Retrieves the data of the given entity
+	 * 
+	 * @param entityName
+	 * @return entity data
+	 */
+	public static String getEntityInfo(String entityName) {
+		Identifier entityId = Identifier.parse(entityName);
+		
+		if (entityId == null)
+			return "Entity " + entityName + " not found";
+		
+		String categoryName = EntityScaleRegistry.getCategoryName(entityId);
+		var category = EntityScaleRegistry.getCategory(categoryName);
+	
+		return String.format(
+				"Entity %s" + NEW_LINE + "Category: %s" + NEW_LINE + "Scale: %.2f" + NEW_LINE + "Speed: %.2f",
+				entityName, categoryName, category.scale(), category.speed());
 	}
 
 	/**

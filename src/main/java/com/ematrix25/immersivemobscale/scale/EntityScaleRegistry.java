@@ -51,15 +51,25 @@ public class EntityScaleRegistry {
 	public static EntityScaleCategory getCategory(String categoryName) {
 		return categories.get(categoryName);
 	}
-
+	
 	/**
-	 * Gets category for specified entity id.
-	 * 
+	 * Gets a category for specified entity id.
+	 *
 	 * @param entityId
-	 * @return registered entity category
+	 * @return entity category
 	 */
 	public static EntityScaleCategory getCategory(Identifier entityId) {
-		return getCategory(ENTITY_CATEGORIES.get(entityId));
+		return categories.get(getCategoryName(entityId));
+	}
+
+	/**
+	 * Gets category name for specified entity id.
+	 * 
+	 * @param entityId
+	 * @return entity category name
+	 */
+	public static String getCategoryName(Identifier entityId) {
+		return ENTITY_CATEGORIES.get(entityId);
 	}
 
 	/**
