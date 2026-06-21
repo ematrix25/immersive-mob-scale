@@ -2,7 +2,6 @@ package com.ematrix25.immersivemobscale.command;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -28,7 +27,7 @@ public class CommandManager {
 	private static final String MOD_CMD_NAME = "ims";
 	private static final Set<String> COMMANDS = new LinkedHashSet<>();
 	private static final Logger LOGGER = LoggerFactory.getLogger(Main.MOD_ID);
-	private static final String WHITESPACE = "\\s+", EMPTY = "";
+	private static final String WHITESPACE = "\\s+";
 
 	private static LiteralArgumentBuilder<CommandSourceStack> rootCommand;
 
@@ -40,120 +39,86 @@ public class CommandManager {
 
 		CommandRegistrationCallback.EVENT.register((dispatcher, _, _) -> dispatcher.register(rootCommand));
 
-		registerCommand("help", _ -> CommandActions.commandsToString(COMMANDS));
+		// Simple commands without arguments and actions.
+		register("help", _ -> CommandActions.commandsToString(COMMANDS));
+		register("version", _ -> CommandActions.getVersion());
+		register("stats", _ -> CommandActions.getStats());
+		register("list", _ -> CommandActions.getList());
 
-		registerCommand("reload", source -> CommandActions.reload(source.getServer()),
-				_ -> Main.MOD_NAME + " configuration reloaded");
-		registerCommand("debug", _ -> CommandActions.toggleDebug(), _ -> CommandActions.getDebug());
+		// Commands without arguments and with actions.
+		register("reload", ctx -> {
+			CommandActions.reload(ctx.getSource().getServer());
+			return Main.MOD_NAME + " configuration reloaded";
+		});
+		register("debug", _ -> {
+			CommandActions.toggleDebug();
+			return CommandActions.getDebug();
+		});
 
-		registerCommand("version", _ -> CommandActions.getVersion());
-		registerCommand("stats", _ -> CommandActions.getStats());
-		registerCommand("list", _ -> CommandActions.getList());
-		registerCommand("list", "category", EntityScaleRegistry::getCategoryNames, CommandActions::getList);
-		registerCommand("info category", "category", EntityScaleRegistry::getCategoryNames, CommandActions::getCategoryInfo);
-		registerCommand("info entity", "entity", EntityScaleRegistry::getEntityNames, CommandActions::getEntityInfo);
+		// Commands with arguments and actions.
+		register("list category", "category", EntityScaleRegistry::getCategoryNames,
+				ctx -> CommandActions.getList(ctx.getArgument("category", String.class)));
+		register("info category", "category", EntityScaleRegistry::getCategoryNames,
+				ctx -> CommandActions.getCategoryInfo(ctx.getArgument("category", String.class)));
+		register("info entity", "entity", EntityScaleRegistry::getEntityNames, ctx -> CommandActions
+				.getEntityInfo(ctx.getSource().getServer(), ctx.getArgument("entity", String.class)));
 	}
 
 	/**
-	 * Registers a command under the root command without argument and action to
-	 * execute.
+	 * Register commands without arguments and actions
 	 * 
-	 * @param cmdPath
-	 * @param msgProvider
+	 * @param path
+	 * @param action
 	 */
-	private static void registerCommand(String cmdPath, Function<CommandSourceStack, String> msgProvider) {
-		registerCommand(cmdPath, null, context -> (CommandSourceStack) context.getSource(), _ -> {
-		}, null, msgProvider);
+	private static void register(String path, Function<CommandContext<CommandSourceStack>, String> action) {
+		register(path, null, null, action);
 	}
 
 	/**
-	 * Register a command under the root command without an action to execute.
+	 * Main method where command registration really happens
 	 * 
-	 * @param cmdPath
-	 * @param argumentName
-	 * @param msgProvider
+	 * @param path
+	 * @param argument
+	 * @param suggestions
+	 * @param action
 	 */
-	private static void registerCommand(String cmdPath, String argumentName, Supplier<Set<String>> suggestionsProvider, Function<String, String> msgProvider) {
+	private static void register(String path, String argument, Supplier<Set<String>> suggestions,
+			Function<CommandContext<CommandSourceStack>, String> action) {
 
-		registerCommand(cmdPath, argumentName, context -> StringArgumentType.getString(context, argumentName), _ -> {
-		}, suggestionsProvider, msgProvider);
-	}
-
-	/**
-	 * Register a command under the root command without an argument.
-	 *
-	 * @param cmdPath
-	 * @param cmdAction
-	 * @param msgProvider
-	 */
-	private static void registerCommand(String cmdPath, Consumer<CommandSourceStack> cmdAction,
-			Function<CommandSourceStack, String> msgProvider) {
-
-		registerCommand(cmdPath, null, context -> context.getSource(), cmdAction, null, msgProvider);
-	}
-
-	/**
-	 * Registers a command under the root command.
-	 *
-	 * @param <T>
-	 * @param cmdPath
-	 * @param argumentName
-	 * @param valueProvider
-	 * @param cmdAction
-	 * @param msgProvider
-	 */
-	private static <T> void registerCommand(String cmdPath, String argumentName,
-			Function<CommandContext<CommandSourceStack>, T> valueProvider, Consumer<T> cmdAction,
-			Supplier<Set<String>> suggestionsProvider, Function<T, String> msgProvider) {
-		if (!cmdPath.equals("help"))
-			COMMANDS.add(cmdPath);
+		if (!path.equals("help"))
+			COMMANDS.add(path);
 		if (Main.debugLogging)
 			LOGGER.info("Commands: {}", COMMANDS);
 
-		String[] cmdNames = cmdPath.trim().split(WHITESPACE);
-		int last = cmdNames.length - 1;
-		var command = Commands.literal(cmdNames[last]);
+		String[] parts = path.trim().split(WHITESPACE);
+		LiteralArgumentBuilder<CommandSourceStack> command = Commands.literal(parts[parts.length - 1]);
 
-		var executor = (Command<CommandSourceStack>) context -> executeCommand(context, valueProvider, cmdAction,
-				msgProvider);
+		Command<CommandSourceStack> executor = ctx -> {
+			String message = action.apply(ctx);
+			ctx.getSource().sendSuccess(() -> Component.literal(message), false);
+			return 1;
+		};
 
-		if (argumentName == null)
-			command.executes(executor);
-		else {
-			var argument = Commands.argument(argumentName.replaceAll(WHITESPACE, EMPTY).toLowerCase(),
-					StringArgumentType.greedyString());
-			if (suggestionsProvider != null) {
-				argument.suggests((_, builder) -> {
-					suggestionsProvider.get().forEach(builder::suggest);
+		if (argument != null) {
+			var arg = Commands.argument(argument.toLowerCase(), StringArgumentType.greedyString());
 
+			if (suggestions != null) {
+				arg.suggests((_, builder) -> {
+					suggestions.get().forEach(builder::suggest);
 					return builder.buildFuture();
 				});
 			}
-			argument.executes(executor);
-			command.then(argument);
+
+			arg.executes(executor);
+			command.then(arg);
+		} else {
+			command.executes(executor);
 		}
 
-		for (int i = last - 1; i >= 0; i--)
-			command = Commands.literal(cmdNames[i]).then(command);
-		rootCommand.then(command);
-	}
+		// Build sub commands hierarchy
+		for (int i = parts.length - 2; i >= 0; i--)
+			command = Commands.literal(parts[i]).then(command);
 
-	/**
-	 * Generates the executor for commands.
-	 * 
-	 * @param <T>
-	 * @param context
-	 * @param valueProvider
-	 * @param cmdAction
-	 * @param msgProvider
-	 * @return integer result
-	 */
-	private static <T> int executeCommand(CommandContext<CommandSourceStack> context,
-			Function<CommandContext<CommandSourceStack>, T> valueProvider, Consumer<T> cmdAction,
-			Function<T, String> msgProvider) {
-		T value = valueProvider.apply(context);
-		cmdAction.accept(value);
-		context.getSource().sendSuccess(() -> Component.literal(msgProvider.apply(value)), false);
-		return 1;
+		rootCommand.then(command);
 	}
 }
