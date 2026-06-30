@@ -1,6 +1,5 @@
 package com.ematrix25.immersivemobscale.command;
 
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -29,10 +28,10 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
  */
 public class CommandActions {
 	private static final Logger LOGGER = LoggerFactory.getLogger(Main.MOD_ID);
-	private static final String NEW_LINE = "\n", EMPTY = "";
+	private static final String NEW_LINE = "\n", SEPARATOR = NEW_LINE + NEW_LINE, HYPHEN = "-";
 
 	/**
-	 * Reloads configuration files and reapplies categories to loaded entities.
+	 * Reloads configuration files and applies categories to loaded entities.
 	 * 
 	 * @param server
 	 */
@@ -60,7 +59,7 @@ public class CommandActions {
 	 * @return registered commands in string
 	 */
 	public static String commandsToString(Set<String> commands) {
-		return Main.MOD_NAME + " commands " + NEW_LINE + String.join(NEW_LINE, commands);
+		return Main.MOD_NAME + " commands " + SEPARATOR + HYPHEN + String.join(NEW_LINE + HYPHEN, commands);
 	}
 
 	/**
@@ -69,8 +68,9 @@ public class CommandActions {
 	 * @return categories and entities count
 	 */
 	public static String getStats() {
-		return Main.MOD_NAME + " registered data" + NEW_LINE + "Categories: " + EntityScaleRegistry.getCategoryCount()
-				+ NEW_LINE + "Entities: " + EntityScaleRegistry.getEntityCount();
+		return Main.MOD_NAME + " registered data" + SEPARATOR + HYPHEN
+				+ String.format("Categories: %d", EntityScaleRegistry.getCategoryCount()) + NEW_LINE + HYPHEN
+				+ String.format("Entities:   %d", EntityScaleRegistry.getEntityCount());
 	}
 
 	/**
@@ -79,8 +79,8 @@ public class CommandActions {
 	 * @return category names
 	 */
 	public static String getList() {
-		return Main.MOD_NAME + " categories " + NEW_LINE
-				+ String.join(NEW_LINE, EntityScaleRegistry.getCategoryNames());
+		return Main.MOD_NAME + " categories " + SEPARATOR + HYPHEN
+				+ String.join(NEW_LINE + HYPHEN, EntityScaleRegistry.getCategoryNames());
 	}
 
 	/**
@@ -90,8 +90,8 @@ public class CommandActions {
 	 * @return entities names
 	 */
 	public static String getList(String categoryName) {
-		return "Category " + categoryName.toLowerCase() + " entities " + NEW_LINE
-				+ String.join(NEW_LINE, EntityScaleRegistry.getEntityNames(categoryName));
+		return "Category " + categoryName.toLowerCase() + " entities " + SEPARATOR + HYPHEN
+				+ String.join(NEW_LINE + HYPHEN, EntityScaleRegistry.getEntityNames(categoryName));
 	}
 
 	/**
@@ -106,13 +106,13 @@ public class CommandActions {
 		if (category == null)
 			return "Category " + categoryName + " not found";
 
-		Set<String> dataSet = new HashSet<>();
+		Set<String> dataSet = new LinkedHashSet<>();
 
-		dataSet.add("Entities: " + category.entities().size());
-		dataSet.add("Scale: " + category.scale());
-		dataSet.add("Speed: " + category.speed());
+		dataSet.add(String.format("Entities: %d", category.entities().size()));
+		dataSet.add(String.format("Scale:    %.2f", category.scale()));
+		dataSet.add(String.format("Speed:    %.2f", category.speed()));
 
-		return "Category " + categoryName + NEW_LINE + String.join(NEW_LINE, dataSet);
+		return "Category " + categoryName + SEPARATOR + HYPHEN + String.join(NEW_LINE + HYPHEN, dataSet);
 	}
 
 	/**
@@ -138,21 +138,24 @@ public class CommandActions {
 		try {
 			entityId = Identifier.parse(entityName);
 		} catch (Exception e) {
-			return "Entity " + entityName + " not found";
+			return "Unknown entity: " + entityName;
 		}
 
 		String categoryName = EntityScaleRegistry.getCategoryName(entityId);
 		var category = EntityScaleRegistry.getCategory(categoryName);
 		Set<String> dataSet = new LinkedHashSet<>();
 
-		dataSet.add("Category: " + categoryName);
-		dataSet.add("Scale Mult: " + category.scale());
-		dataSet.add("Speed Mult: " + category.speed());
+		if (category == null)
+			return "Entity " + entityName + " is not registered to any category";
+
+		dataSet.add(String.format("Category:   %s", categoryName));
+		dataSet.add(String.format("Scale Mult: %.2f", category.scale()));
+		dataSet.add(String.format("Speed Mult: %.2f", category.speed()));
 
 		if (server != null)
 			dataSet.addAll(getExtraEntityInfo(server, entityId));
 
-		return "Entity " + entityName + NEW_LINE + String.join(NEW_LINE, dataSet);
+		return "Entity " + entityName + SEPARATOR + HYPHEN + String.join(NEW_LINE + HYPHEN, dataSet);
 	}
 
 	/**
@@ -164,40 +167,50 @@ public class CommandActions {
 	 */
 	private static Set<String> getExtraEntityInfo(MinecraftServer server, Identifier entityId) {
 		EntityType<?> entityType = BuiltInRegistries.ENTITY_TYPE.getValue(entityId);
-		Entity entity = entityType.create(server.overworld(), EntitySpawnReason.COMMAND);
-
-		if (!(entity instanceof LivingEntity livingEntity))
+		if (entityType == null)
 			return Set.of();
 
-		EntityDimensions dimensions = livingEntity.getDimensions(Pose.STANDING);
+		Entity entity = entityType.create(server.overworld(), EntitySpawnReason.COMMAND);
+		if (!(entity instanceof LivingEntity livingEntity)) {
+			if (entity != null)
+				entity.discard();
+			return Set.of();
+		}
+
 		Set<String> dataSet = new LinkedHashSet<>();
-		String dimension = String.format("Dimensions: %.2fW x %.2fH", dimensions.width(), dimensions.height());
-		String health = "Health: " + String.format("%.2f", livingEntity.getAttributeValue(Attributes.MAX_HEALTH));
-		String attack = EMPTY;
-		if (livingEntity.getAttribute(Attributes.ATTACK_DAMAGE) != null)
-			attack = "Attack: " + String.format("%.2f", livingEntity.getAttributeValue(Attributes.ATTACK_DAMAGE));
-		String speed = "Speed: " + String.format("%.2f",
-				(livingEntity.getAttribute(Attributes.FLYING_SPEED) == null
-						? livingEntity.getAttributeValue(Attributes.MOVEMENT_SPEED)
-						: livingEntity.getAttributeValue(Attributes.FLYING_SPEED)));
+		EntityDimensions dimensions = livingEntity.getDimensions(Pose.STANDING), scaledDimensions;
+		double healthValue = livingEntity.getAttributeValue(Attributes.MAX_HEALTH);
+		boolean hasAttack = livingEntity.getAttribute(Attributes.ATTACK_DAMAGE) != null;
+		double attackValue = hasAttack ? livingEntity.getAttributeValue(Attributes.ATTACK_DAMAGE) : 0;
+		double speedValue = getSpeedValue(livingEntity);
 
 		EntityScaleHandler.apply(livingEntity);
 		livingEntity.refreshDimensions();
 
-		dimensions = livingEntity.getDimensions(Pose.STANDING);
-		dataSet.add(dimension + String.format(" -> %.2fW x %.2fH", dimensions.width(), dimensions.height()));
-		dataSet.add(health + " -> " + String.format("%.2f", livingEntity.getAttributeValue(Attributes.MAX_HEALTH)));
-		if (!attack.isEmpty())
-			dataSet.add(
-					attack + " -> " + String.format("%.2f", livingEntity.getAttributeValue(Attributes.ATTACK_DAMAGE)));
-		dataSet.add(speed + " -> "
-				+ String.format("%.2f",
-						(livingEntity.getAttribute(Attributes.FLYING_SPEED) == null
-								? livingEntity.getAttributeValue(Attributes.MOVEMENT_SPEED)
-								: livingEntity.getAttributeValue(Attributes.FLYING_SPEED))));
+		scaledDimensions = livingEntity.getDimensions(Pose.STANDING);
+		dataSet.add(String.format("Dimensions: %.2fW x %.2fH -> %.2fW x %.2fH", dimensions.width(), dimensions.height(),
+				scaledDimensions.width(), scaledDimensions.height()));
+		dataSet.add(String.format("Health:     %.2f -> %.2f", healthValue,
+				livingEntity.getAttributeValue(Attributes.MAX_HEALTH)));
+		if (hasAttack)
+			dataSet.add(String.format("Attack:     %.2f -> %.2f", attackValue,
+					livingEntity.getAttributeValue(Attributes.ATTACK_DAMAGE)));
+		dataSet.add(String.format("Speed:      %.2f -> %.2f", speedValue, getSpeedValue(livingEntity)));
+
 		entity.discard();
 
 		return dataSet;
+	}
+
+	/**
+	 * Retrieves the speed attribute value of a given living entity.
+	 * 
+	 * @return speed attribute value
+	 */
+	private static double getSpeedValue(LivingEntity livingEntity) {
+		return livingEntity.getAttribute(Attributes.FLYING_SPEED) == null
+				? livingEntity.getAttributeValue(Attributes.MOVEMENT_SPEED)
+				: livingEntity.getAttributeValue(Attributes.FLYING_SPEED);
 	}
 
 	/**

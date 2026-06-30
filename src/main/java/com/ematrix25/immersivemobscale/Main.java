@@ -23,7 +23,7 @@ public class Main implements ModInitializer {
 	public static final String MOD_ID = "immersivemobscale", MOD_NAME = "Immersive Mob Scale";
 	private static final Logger LOGGER = LoggerFactory.getLogger(Main.MOD_ID);
 
-	public static boolean debugLogging = true;
+	public static boolean debugLogging = false;
 
 	/**
 	 * Initializes systems during Fabric startup.

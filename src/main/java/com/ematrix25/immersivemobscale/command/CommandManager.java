@@ -19,6 +19,8 @@ import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.permissions.Permission;
+import net.minecraft.server.permissions.PermissionLevel;
 
 /**
  * Manages registration of commands.
@@ -49,11 +51,11 @@ public class CommandManager {
 		register("reload", ctx -> {
 			CommandActions.reload(ctx.getSource().getServer());
 			return Main.MOD_NAME + " configuration reloaded";
-		});
+		}, PermissionLevel.GAMEMASTERS);
 		register("debug", _ -> {
 			CommandActions.toggleDebug();
 			return CommandActions.getDebug();
-		});
+		}, PermissionLevel.GAMEMASTERS);
 
 		// Commands with arguments and actions.
 		register("list category", "category", EntityScaleRegistry::getCategoryNames,
@@ -65,13 +67,38 @@ public class CommandManager {
 	}
 
 	/**
-	 * Register commands without arguments and actions
+	 * Register commands without arguments, actions and permission
 	 * 
 	 * @param path
 	 * @param action
 	 */
 	private static void register(String path, Function<CommandContext<CommandSourceStack>, String> action) {
-		register(path, null, null, action);
+		register(path, null, null, action, null);
+	}
+
+	/**
+	 * Register commands without arguments and actions, but with permission
+	 * 
+	 * @param path
+	 * @param action
+	 * @param permissionLevel
+	 */
+	private static void register(String path, Function<CommandContext<CommandSourceStack>, String> action,
+			PermissionLevel permissionLevel) {
+		register(path, null, null, action, permissionLevel);
+	}
+
+	/**
+	 * Register commands with arguments and actions, but without permission
+	 * 
+	 * @param path
+	 * @param argument
+	 * @param suggestions
+	 * @param action
+	 */
+	private static void register(String path, String argument, Supplier<Set<String>> suggestions,
+			Function<CommandContext<CommandSourceStack>, String> action) {
+		register(path, argument, suggestions, action, null);
 	}
 
 	/**
@@ -81,17 +108,22 @@ public class CommandManager {
 	 * @param argument
 	 * @param suggestions
 	 * @param action
+	 * @param permissionLevel
 	 */
 	private static void register(String path, String argument, Supplier<Set<String>> suggestions,
-			Function<CommandContext<CommandSourceStack>, String> action) {
+			Function<CommandContext<CommandSourceStack>, String> action, PermissionLevel permissionLevel) {
 
 		if (!path.equals("help"))
-			COMMANDS.add(path);
+			COMMANDS.add(path + (permissionLevel != null ? " (Requires " + permissionLevel + ")" : ""));
 		if (Main.debugLogging)
 			LOGGER.info("Commands: {}", COMMANDS);
 
 		String[] parts = path.trim().split(WHITESPACE);
 		LiteralArgumentBuilder<CommandSourceStack> command = Commands.literal(parts[parts.length - 1]);
+
+		if (permissionLevel != null)
+			command.requires(
+					source -> source.permissions().hasPermission(new Permission.HasCommandLevel(permissionLevel)));
 
 		Command<CommandSourceStack> executor = ctx -> {
 			String message = action.apply(ctx);
