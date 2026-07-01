@@ -46,10 +46,11 @@ public class CommandManager {
 		register("version", _ -> CommandActions.getVersion());
 		register("stats", _ -> CommandActions.getStats());
 		register("list", _ -> CommandActions.getList());
+		register("info self", ctx -> CommandActions.getSelfInfo(ctx.getSource()));
 
 		// Commands without arguments and with actions.
 		register("reload", ctx -> {
-			CommandActions.reload(ctx.getSource().getServer());
+			CommandActions.reload(ctx.getSource());
 			return Main.MOD_NAME + " configuration reloaded";
 		}, PermissionLevel.GAMEMASTERS);
 		register("debug", _ -> {
@@ -62,8 +63,8 @@ public class CommandManager {
 				ctx -> CommandActions.getList(ctx.getArgument("category", String.class)));
 		register("info category", "category", EntityScaleRegistry::getCategoryNames,
 				ctx -> CommandActions.getCategoryInfo(ctx.getArgument("category", String.class)));
-		register("info entity", "entity", EntityScaleRegistry::getEntityNames, ctx -> CommandActions
-				.getEntityInfo(ctx.getSource().getServer(), ctx.getArgument("entity", String.class)));
+		register("info entity", "entity", EntityScaleRegistry::getEntityNames,
+				ctx -> CommandActions.getEntityInfo(ctx.getSource(), ctx.getArgument("entity", String.class)));
 	}
 
 	/**

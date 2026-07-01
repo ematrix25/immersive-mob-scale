@@ -11,9 +11,10 @@ import com.ematrix25.immersivemobscale.config.ConfigManager;
 import com.ematrix25.immersivemobscale.scale.EntityScaleHandler;
 import com.ematrix25.immersivemobscale.scale.EntityScaleRegistry;
 
+import net.fabricmc.fabric.api.entity.FakePlayer;
+import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityDimensions;
@@ -33,13 +34,13 @@ public class CommandActions {
 	/**
 	 * Reloads configuration files and applies categories to loaded entities.
 	 * 
-	 * @param server
+	 * @param source
 	 */
-	public static void reload(MinecraftServer server) {
+	public static void reload(CommandSourceStack source) {
 		ConfigManager.loadConfig(ConfigManager.ConfigType.CATEGORIES);
 		EntityScaleRegistry.initialize();
 
-		for (ServerLevel level : server.getAllLevels())
+		for (ServerLevel level : source.getServer().getAllLevels())
 			for (Entity entity : level.getAllEntities())
 				if (entity instanceof LivingEntity livingEntity)
 					EntityScaleHandler.apply(livingEntity);
@@ -116,6 +117,32 @@ public class CommandActions {
 	}
 
 	/**
+	 * Retrieves the data of the player entity
+	 * 
+	 * @param source
+	 * @return player entity data
+	 */
+	public static String getSelfInfo(CommandSourceStack source) {
+		var player = FakePlayer.get(source.getLevel());
+		String categoryName = EntityScaleRegistry
+				.getCategoryName(BuiltInRegistries.ENTITY_TYPE.getKey(player.getType()));
+		var category = EntityScaleRegistry.getCategory(categoryName);
+		Set<String> dataSet = new LinkedHashSet<>();
+
+		if (category == null)
+			return "Player entity is not registered to any category";
+
+		dataSet.add(String.format("Category:   %s", categoryName));
+		dataSet.add(String.format("Scale Mult: %.2f", category.scale()));
+		dataSet.add(String.format("Speed Mult: %.2f", category.speed()));
+
+		if (Main.debugLogging)
+			dataSet.addAll(getEntityAttributes(player));
+
+		return "Player entity" + SEPARATOR + HYPHEN + String.join(NEW_LINE + HYPHEN, dataSet);
+	}
+
+	/**
 	 * Retrieves the data of the given entity
 	 * 
 	 * @param entityName
@@ -128,11 +155,11 @@ public class CommandActions {
 	/**
 	 * Retrieves the data of the given entity
 	 * 
-	 * @param server
+	 * @param source
 	 * @param entityName
 	 * @return entity data
 	 */
-	public static String getEntityInfo(MinecraftServer server, String entityName) {
+	public static String getEntityInfo(CommandSourceStack source, String entityName) {
 		Identifier entityId;
 
 		try {
@@ -152,31 +179,30 @@ public class CommandActions {
 		dataSet.add(String.format("Scale Mult: %.2f", category.scale()));
 		dataSet.add(String.format("Speed Mult: %.2f", category.speed()));
 
-		if (server != null)
-			dataSet.addAll(getExtraEntityInfo(server, entityId));
+		if (source != null && Main.debugLogging) {
+			EntityType<?> entityType = BuiltInRegistries.ENTITY_TYPE.getValue(entityId);
+
+			if (entityType != null) {
+				Entity entity = entityType.create(source.getServer().overworld(), EntitySpawnReason.COMMAND);
+
+				if (entity instanceof LivingEntity livingEntity)
+					dataSet.addAll(getEntityAttributes(livingEntity));
+
+				if (entity != null)
+					entity.discard();
+			}
+		}
 
 		return "Entity " + entityName + SEPARATOR + HYPHEN + String.join(NEW_LINE + HYPHEN, dataSet);
 	}
 
 	/**
-	 * Retrieves the extra data of the given entity id
+	 * Retrieves the attributes of the given living entity
 	 * 
-	 * @param server
-	 * @param entityId
-	 * @return extra entity data
+	 * @param livingEntity
+	 * @return entity attributes
 	 */
-	private static Set<String> getExtraEntityInfo(MinecraftServer server, Identifier entityId) {
-		EntityType<?> entityType = BuiltInRegistries.ENTITY_TYPE.getValue(entityId);
-		if (entityType == null)
-			return Set.of();
-
-		Entity entity = entityType.create(server.overworld(), EntitySpawnReason.COMMAND);
-		if (!(entity instanceof LivingEntity livingEntity)) {
-			if (entity != null)
-				entity.discard();
-			return Set.of();
-		}
-
+	private static Set<String> getEntityAttributes(LivingEntity livingEntity) {
 		Set<String> dataSet = new LinkedHashSet<>();
 		EntityDimensions dimensions = livingEntity.getDimensions(Pose.STANDING), scaledDimensions;
 		double healthValue = livingEntity.getAttributeValue(Attributes.MAX_HEALTH);
@@ -196,8 +222,6 @@ public class CommandActions {
 			dataSet.add(String.format("Attack:     %.2f -> %.2f", attackValue,
 					livingEntity.getAttributeValue(Attributes.ATTACK_DAMAGE)));
 		dataSet.add(String.format("Speed:      %.2f -> %.2f", speedValue, getSpeedValue(livingEntity)));
-
-		entity.discard();
 
 		return dataSet;
 	}
