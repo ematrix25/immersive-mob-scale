@@ -4,7 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ematrix25.immersivemobscale.Main;
-import com.ematrix25.immersivemobscale.config.ConfigManager;
+import com.ematrix25.immersivemobscale.scale.model.EntityScaleData;
 
 import net.minecraft.core.Holder;
 import net.minecraft.resources.Identifier;
@@ -31,24 +31,27 @@ public class EntityScaleHandler {
 	 */
 	public static void apply(LivingEntity entity) {
 		Identifier entityId = EntityType.getKey(entity.getType());
-		EntityScaleCategory category = EntityScaleRegistry.getCategory(entityId);
+		EntityScaleData data = EntityScaleRegistry.getEntityScaleData(entityId);
+		String source;
 
-		if (category == null)
+		if (data == null)
 			return;
 
 		var healthAttribute = entity.getAttribute(Attributes.MAX_HEALTH);
-		updateModifier(entity, Attributes.MAX_HEALTH, HEALTH_MODIFIER_ID, category.scale());
-		updateModifier(entity, Attributes.ATTACK_DAMAGE, DAMAGE_MODIFIER_ID, category.scale());
-		updateModifier(entity, Attributes.MOVEMENT_SPEED, SPEED_MODIFIER_ID, category.speed());
-		updateModifier(entity, Attributes.FLYING_SPEED, SPEED_MODIFIER_ID, category.speed());
-		updateModifier(entity, Attributes.SCALE, SCALE_MODIFIER_ID, category.scale());
+		updateModifier(entity, Attributes.MAX_HEALTH, HEALTH_MODIFIER_ID, data.health());
+		updateModifier(entity, Attributes.ATTACK_DAMAGE, DAMAGE_MODIFIER_ID, data.attack());
+		updateModifier(entity, Attributes.MOVEMENT_SPEED, SPEED_MODIFIER_ID, data.speed());
+		updateModifier(entity, Attributes.FLYING_SPEED, SPEED_MODIFIER_ID, data.speed());
+		updateModifier(entity, Attributes.SCALE, SCALE_MODIFIER_ID, data.scale());
 
 		if (healthAttribute != null)
 			entity.setHealth((float) healthAttribute.getValue());
 
-		if (Main.debugLogging)
-			LOGGER.info("Applying scale category '{}' {} to entity {}", ConfigManager.getCategoryName(category),
-					category, entityId);
+		if (Main.debugLogging) {
+			source = EntityScaleRegistry.getCategoryName(entityId);
+
+			LOGGER.info("Applied {} scaling to entity {}", source != null ? source : "entity override", entityId);
+		}
 	}
 
 	/**

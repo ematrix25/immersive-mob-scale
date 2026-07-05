@@ -2,7 +2,6 @@ package com.ematrix25.immersivemobscale.config;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -15,9 +14,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ematrix25.immersivemobscale.Main;
-import com.ematrix25.immersivemobscale.scale.EntityScaleCategory;
+import com.ematrix25.immersivemobscale.scale.model.EntityScaleCategory;
+import com.ematrix25.immersivemobscale.scale.model.EntityScaleData;
 import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 
 import net.minecraft.resources.Identifier;
 
@@ -33,69 +32,28 @@ public class ConfigManager {
 	private static Path configDir;
 
 	/**
-	 * Configuration file types handled by ConfigManager.
-	 */
-	public enum ConfigType {
-		/**
-		 * Entity category configuration.
-		 */
-		CATEGORIES("categories", new TypeToken<Map<String, EntityScaleCategory>>() {
-		}.getType());
-
-		private final String key;
-		private final Type type;
-
-		ConfigType(String key, Type type) {
-			this.key = key;
-			this.type = type;
-		}
-
-		/**
-		 * Gets internal configuration identifier.
-		 * 
-		 * @return configuration identifier
-		 */
-		public String getKey() {
-			return this.key;
-		}
-
-		/**
-		 * Gets configuration file name.
-		 * 
-		 * @return configuration file name
-		 */
-		public String getFileName() {
-			return this.key + ".json";
-		}
-
-		/**
-		 * Gets configuration loaded object type.
-		 * 
-		 * @return configuration object type
-		 */
-		public Type getType() {
-			return type;
-		}
-	}
-
-	/**
 	 * Starts ConfigManager with the given folder.
 	 * 
 	 * @param configDir
 	 */
 	public static void initialize(Path configDir) {
 		ConfigManager.configDir = configDir;
-		String fileName = ConfigType.CATEGORIES.getFileName();
-		Path file = configDir.resolve(fileName);
+		String fileName;
+		Path file;
 
 		try {
-			if (Files.notExists(configDir)) {
-				Files.createDirectories(configDir);
-				if (Main.debugLogging)
-					LOGGER.info("Configuration directory initialized at {}", configDir);
+			for (ConfigType configType : ConfigType.values()) {
+				fileName = configType.getFileName();
+				file = configDir.resolve(fileName);
+
+				if (Files.notExists(configDir)) {
+					Files.createDirectories(configDir);
+					if (Main.debugLogging)
+						LOGGER.info("Configuration directory initialized at {}", configDir);
+				}
+				if (Files.notExists(file))
+					createDefaultFile(fileName, file);
 			}
-			if (Files.notExists(file))
-				createDefaultFile(fileName, file);
 			if (Main.debugLogging)
 				LOGGER.info("Config system initialized");
 		} catch (IOException exception) {
@@ -152,6 +110,7 @@ public class ConfigManager {
 	private static <T> void validate(ConfigType configType, T config) {
 		switch (configType) {
 		case CATEGORIES -> validateCategories((Map<String, EntityScaleCategory>) config);
+		case ENTITIES -> validateEntities((Map<String, EntityScaleData>) config);
 		}
 	}
 
@@ -185,6 +144,30 @@ public class ConfigManager {
 	}
 
 	/**
+	 * Validates entities configuration file.
+	 * 
+	 * @param entities
+	 */
+	private static void validateEntities(Map<String, EntityScaleData> entities) {
+		entities.forEach((name, data) -> {
+			if (data.scale() < 0.10f || data.scale() > 5.00f)
+				LOGGER.warn("Bad scale value {} for category {}. Best use values between 0.1 and 5.0", data.scale(),
+						name);
+			if (data.speed() < 0.50f || data.speed() > 1.50f)
+				LOGGER.warn("Bad speed value {} for category {}. Best use values between 0.5 and 1.5", data.speed(),
+						name);
+			if (data.health() < 0.10f || data.health() > 5.00f)
+				LOGGER.warn("Bad scale value {} for category {}. Best use values between 0.1 and 5.0", data.health(),
+						name);
+			if (data.attack() < 0.10f || data.attack() > 5.00f)
+				LOGGER.warn("Bad scale value {} for category {}. Best use values between 0.1 and 5.0", data.attack(),
+						name);
+			if (Identifier.tryParse(name) == null)
+				LOGGER.warn("Entity {} is an invalid entity id", name);
+		});
+	}
+
+	/**
 	 * Gets configuration object for respective configuration type.
 	 * 
 	 * @param <T>        configuration object type
@@ -211,7 +194,7 @@ public class ConfigManager {
 
 		return "unknown";
 	}
-	
+
 	/**
 	 * Gets the number of loaded configurations.
 	 *

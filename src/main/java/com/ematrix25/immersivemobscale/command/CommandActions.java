@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 
 import com.ematrix25.immersivemobscale.Main;
 import com.ematrix25.immersivemobscale.config.ConfigManager;
+import com.ematrix25.immersivemobscale.config.ConfigType;
 import com.ematrix25.immersivemobscale.scale.EntityScaleHandler;
 import com.ematrix25.immersivemobscale.scale.EntityScaleRegistry;
 
@@ -37,7 +38,8 @@ public class CommandActions {
 	 * @param source
 	 */
 	public static void reload(CommandSourceStack source) {
-		ConfigManager.loadConfig(ConfigManager.ConfigType.CATEGORIES);
+		for (ConfigType configType : ConfigType.values())
+			ConfigManager.loadConfig(configType);
 		EntityScaleRegistry.initialize();
 
 		for (ServerLevel level : source.getServer().getAllLevels())
@@ -169,15 +171,17 @@ public class CommandActions {
 		}
 
 		String categoryName = EntityScaleRegistry.getCategoryName(entityId);
-		var category = EntityScaleRegistry.getCategory(categoryName);
+		var data = EntityScaleRegistry.getEntityScaleData(entityId);
 		Set<String> dataSet = new LinkedHashSet<>();
 
-		if (category == null)
-			return "Entity " + entityName + " is not registered to any category";
+		if (data == null)
+			return "Entity " + entityName + " is not registered";
 
-		dataSet.add(String.format("Category:   %s", categoryName));
-		dataSet.add(String.format("Scale Mult: %.2f", category.scale()));
-		dataSet.add(String.format("Speed Mult: %.2f", category.speed()));
+		dataSet.add(String.format("Category:   %s", (categoryName != null ? categoryName : "None (Entity override)")));
+		dataSet.add(String.format("Scale Mult: %.2f", data.scale()));
+		dataSet.add(String.format("Speed Mult: %.2f", data.speed()));
+		dataSet.add(String.format("Health Mult: %.2f", data.health()));
+		dataSet.add(String.format("Attack Mult: %.2f", data.attack()));
 
 		if (source != null && Main.debugLogging) {
 			EntityType<?> entityType = BuiltInRegistries.ENTITY_TYPE.getValue(entityId);

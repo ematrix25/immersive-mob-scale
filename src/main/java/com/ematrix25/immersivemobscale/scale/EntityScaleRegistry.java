@@ -10,7 +10,9 @@ import org.slf4j.LoggerFactory;
 
 import com.ematrix25.immersivemobscale.Main;
 import com.ematrix25.immersivemobscale.config.ConfigManager;
-import com.ematrix25.immersivemobscale.config.ConfigManager.ConfigType;
+import com.ematrix25.immersivemobscale.config.ConfigType;
+import com.ematrix25.immersivemobscale.scale.model.EntityScaleCategory;
+import com.ematrix25.immersivemobscale.scale.model.EntityScaleData;
 
 import net.minecraft.resources.Identifier;
 
@@ -23,6 +25,7 @@ public class EntityScaleRegistry {
 	private static final Logger LOGGER = LoggerFactory.getLogger(Main.MOD_ID);
 
 	private static Map<String, EntityScaleCategory> categories = new HashMap<>();
+	private static Map<String, EntityScaleData> entities = new HashMap<>();
 
 	/**
 	 * Loads entity categories into runtime registry.
@@ -31,10 +34,15 @@ public class EntityScaleRegistry {
 		ENTITY_CATEGORIES.clear();
 		ENTITY_NAMES.clear();
 		categories = ConfigManager.getConfig(ConfigType.CATEGORIES);
+		entities = ConfigManager.getConfig(ConfigType.ENTITIES);
 
 		if (categories == null)
 			return;
 
+		if (entities == null)
+			entities = Map.of();
+
+		ENTITY_NAMES.addAll(entities.keySet());
 		categories.forEach((name, category) -> {
 			if (category.entities() == null || category.entities().isEmpty())
 				return;
@@ -65,6 +73,26 @@ public class EntityScaleRegistry {
 	 */
 	public static EntityScaleCategory getCategory(Identifier entityId) {
 		return categories.get(getCategoryName(entityId));
+	}
+
+	/**
+	 * Gets a scale data by entity id.
+	 * 
+	 * @param entityId
+	 * @return entity scale data
+	 */
+	public static EntityScaleData getEntityScaleData(Identifier entityId) {
+		EntityScaleData entityData = entities.get(entityId.toString());
+
+		if (entityData != null)
+			return entityData;
+
+		EntityScaleCategory category = getCategory(entityId);
+
+		if (category == null)
+			return null;
+
+		return EntityScaleData.of(category);
 	}
 
 	/**
@@ -121,6 +149,6 @@ public class EntityScaleRegistry {
 	 * @return entity count
 	 */
 	public static int getEntityCount() {
-		return ENTITY_CATEGORIES.size();
+		return ENTITY_NAMES.size();
 	}
 }

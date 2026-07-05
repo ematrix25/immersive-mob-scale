@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 
 import com.ematrix25.immersivemobscale.command.CommandManager;
 import com.ematrix25.immersivemobscale.config.ConfigManager;
+import com.ematrix25.immersivemobscale.config.ConfigType;
 import com.ematrix25.immersivemobscale.scale.EntityScaleHandler;
 import com.ematrix25.immersivemobscale.scale.EntityScaleRegistry;
 
@@ -31,7 +32,8 @@ public class Main implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		ConfigManager.initialize(getConfigDir());
-		ConfigManager.loadConfig(ConfigManager.ConfigType.CATEGORIES);
+		for (ConfigType configType : ConfigType.values())
+			ConfigManager.loadConfig(configType);
 		EntityScaleRegistry.initialize();
 		CommandManager.register();
 

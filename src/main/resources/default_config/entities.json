@@ -1,0 +1,32 @@
+{
+	"minecraft:ender_dragon": {
+		"scale": 1.30,
+		"speed": 0.80,
+		"health": 4.00,
+		"attack": 2.50
+	},
+	"minecraft:warden": {
+		"scale": 0.97,
+		"speed": 1.05,
+		"health": 0.70,
+		"attack": 0.85
+	},
+	"minecraft:elder_guardian": {
+		"scale": 1.09,
+		"speed": 0.91,
+		"health": 1.90,
+		"attack": 1.45
+	},
+	"minecraft:ravager": {
+		"scale": 1.01,
+		"speed": 0.99,
+		"health": 1.05,
+		"attack": 1.03
+	},
+	"minecraft:evoker": {
+		"scale": 1.20,
+		"speed": 0.84,
+		"health": 3.00,
+		"attack": 2.00
+	}
+}

@@ -1,4 +1,4 @@
-package com.ematrix25.immersivemobscale.scale;
+package com.ematrix25.immersivemobscale.scale.model;
 
 import java.util.Set;
 

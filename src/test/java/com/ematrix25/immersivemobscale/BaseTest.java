@@ -9,7 +9,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.TestInstance;
 
 import com.ematrix25.immersivemobscale.config.ConfigManager;
-import com.ematrix25.immersivemobscale.config.ConfigManager.ConfigType;
+import com.ematrix25.immersivemobscale.config.ConfigType;
 
 /**
  * Provides shared setup and cleanup utilities for tests.
