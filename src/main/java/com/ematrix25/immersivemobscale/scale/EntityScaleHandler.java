@@ -15,7 +15,7 @@ import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 
 /**
- * Handles configured scale properties to entity by their category.
+ * Handles configured scale properties to entities.
  */
 public class EntityScaleHandler {
 	private static final Logger LOGGER = LoggerFactory.getLogger(Main.MOD_ID);
@@ -30,28 +30,68 @@ public class EntityScaleHandler {
 	 * @param entity
 	 */
 	public static void apply(LivingEntity entity) {
-		Identifier entityId = EntityType.getKey(entity.getType());
-		EntityScaleData data = EntityScaleRegistry.getEntityScaleData(entityId);
-		String source;
-
-		if (data == null)
+		if (entity == null)
 			return;
 
-		var healthAttribute = entity.getAttribute(Attributes.MAX_HEALTH);
+		Identifier entityId = EntityType.getKey(entity.getType());
+		EntityScaleData configData = EntityScaleRegistry.getEntityScaleData(entityId);
+
+		var attachment = EntityScaleAttachment.SCALE_DATA;
+
+		if (configData == null) {
+			if (entity.hasAttached(attachment))
+				entity.removeAttached(attachment);
+
+			updateModifier(entity, Attributes.MAX_HEALTH, HEALTH_MODIFIER_ID);
+			updateModifier(entity, Attributes.ATTACK_DAMAGE, DAMAGE_MODIFIER_ID);
+			updateModifier(entity, Attributes.MOVEMENT_SPEED, SPEED_MODIFIER_ID);
+			updateModifier(entity, Attributes.FLYING_SPEED, SPEED_MODIFIER_ID);
+			updateModifier(entity, Attributes.SCALE, SCALE_MODIFIER_ID);
+
+			var healthAttribute = entity.getAttribute(Attributes.MAX_HEALTH);
+
+			if (healthAttribute != null)
+				entity.setHealth((float) healthAttribute.getValue());
+
+			return;
+		}
+
+		if (!(entity.hasAttached(attachment) && entity.getAttached(attachment).equals(configData))) {
+			entity.setAttached(attachment, configData);
+
+			if (Main.debugLogging)
+				LOGGER.info("Applied {} attachment to entity {}", EntityScaleAttachment.SCALE_DATA_ID, entityId);
+		}
+
+		EntityScaleData data = entity.getAttached(attachment);
+
 		updateModifier(entity, Attributes.MAX_HEALTH, HEALTH_MODIFIER_ID, data.health());
 		updateModifier(entity, Attributes.ATTACK_DAMAGE, DAMAGE_MODIFIER_ID, data.attack());
 		updateModifier(entity, Attributes.MOVEMENT_SPEED, SPEED_MODIFIER_ID, data.speed());
 		updateModifier(entity, Attributes.FLYING_SPEED, SPEED_MODIFIER_ID, data.speed());
 		updateModifier(entity, Attributes.SCALE, SCALE_MODIFIER_ID, data.scale());
 
+		var healthAttribute = entity.getAttribute(Attributes.MAX_HEALTH);
+
 		if (healthAttribute != null)
 			entity.setHealth((float) healthAttribute.getValue());
 
 		if (Main.debugLogging) {
-			source = EntityScaleRegistry.getCategoryName(entityId);
+			String source = EntityScaleRegistry.getCategoryName(entityId);
 
 			LOGGER.info("Applied {} scaling to entity {}", source != null ? source : "entity override", entityId);
 		}
+	}
+
+	/**
+	 * Removes a permanent attribute modifier on an entity.
+	 * 
+	 * @param entity
+	 * @param attribute
+	 * @param modifierId
+	 */
+	private static void updateModifier(LivingEntity entity, Holder<Attribute> attribute, Identifier modifierId) {
+		updateModifier(entity, attribute, modifierId, 1.0);
 	}
 
 	/**
@@ -65,15 +105,19 @@ public class EntityScaleHandler {
 	private static void updateModifier(LivingEntity entity, Holder<Attribute> attribute, Identifier modifierId,
 			double multiplier) {
 		var attributeInstance = entity.getAttribute(attribute);
+
 		if (attributeInstance == null)
 			return;
+
 		var oldModifier = attributeInstance.getModifier(modifierId);
+
 		if (oldModifier != null)
 			attributeInstance.removeModifier(oldModifier);
+
 		if (multiplier == 1.0)
 			return;
-		double amount = attributeInstance.getBaseValue() * (multiplier - 1.0);
 
+		double amount = attributeInstance.getBaseValue() * (multiplier - 1.0);
 		attributeInstance
 				.addPermanentModifier(new AttributeModifier(modifierId, amount, AttributeModifier.Operation.ADD_VALUE));
 	}

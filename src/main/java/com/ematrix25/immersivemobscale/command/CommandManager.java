@@ -68,7 +68,7 @@ public class CommandManager {
 	}
 
 	/**
-	 * Register commands without arguments, actions and permission
+	 * Register commands without arguments, actions and permission.
 	 * 
 	 * @param path
 	 * @param action
@@ -78,7 +78,7 @@ public class CommandManager {
 	}
 
 	/**
-	 * Register commands without arguments and actions, but with permission
+	 * Register commands without arguments and actions, but with permission.
 	 * 
 	 * @param path
 	 * @param action
@@ -90,7 +90,7 @@ public class CommandManager {
 	}
 
 	/**
-	 * Register commands with arguments and actions, but without permission
+	 * Register commands with arguments and actions, but without permission.
 	 * 
 	 * @param path
 	 * @param argument
@@ -103,7 +103,7 @@ public class CommandManager {
 	}
 
 	/**
-	 * Main method where command registration really happens
+	 * Main method where command registration really happens.
 	 * 
 	 * @param path
 	 * @param argument

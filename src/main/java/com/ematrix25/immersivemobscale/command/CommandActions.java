@@ -9,12 +9,13 @@ import org.slf4j.LoggerFactory;
 import com.ematrix25.immersivemobscale.Main;
 import com.ematrix25.immersivemobscale.config.ConfigManager;
 import com.ematrix25.immersivemobscale.config.ConfigType;
+import com.ematrix25.immersivemobscale.scale.EntityScaleAttachment;
 import com.ematrix25.immersivemobscale.scale.EntityScaleHandler;
 import com.ematrix25.immersivemobscale.scale.EntityScaleRegistry;
+import com.ematrix25.immersivemobscale.scale.model.EntityScaleData;
 
 import net.fabricmc.fabric.api.entity.FakePlayer;
 import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
@@ -24,6 +25,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.player.Player;
 
 /**
  * Manages the actions of commands.
@@ -33,19 +35,21 @@ public class CommandActions {
 	private static final String NEW_LINE = "\n", SEPARATOR = NEW_LINE + NEW_LINE, HYPHEN = "-";
 
 	/**
-	 * Reloads configuration files and applies categories to loaded entities.
+	 * Reloads configuration files and applies scaling to loaded entities.
 	 * 
 	 * @param source
 	 */
 	public static void reload(CommandSourceStack source) {
 		for (ConfigType configType : ConfigType.values())
 			ConfigManager.loadConfig(configType);
+
 		EntityScaleRegistry.initialize();
 
 		for (ServerLevel level : source.getServer().getAllLevels())
 			for (Entity entity : level.getAllEntities())
 				if (entity instanceof LivingEntity livingEntity)
 					EntityScaleHandler.apply(livingEntity);
+
 		LOGGER.info("Reloaded configuration and reapplied entity categories");
 	}
 
@@ -66,7 +70,7 @@ public class CommandActions {
 	}
 
 	/**
-	 * Retrieves the statistics of the registered categories and entities
+	 * Retrieves the statistics of the registered categories and entities.
 	 * 
 	 * @return categories and entities count
 	 */
@@ -77,7 +81,7 @@ public class CommandActions {
 	}
 
 	/**
-	 * Retrieves the name of the registered categories
+	 * Retrieves the name of the registered categories.
 	 * 
 	 * @return category names
 	 */
@@ -87,7 +91,7 @@ public class CommandActions {
 	}
 
 	/**
-	 * Retrieves the name of the registered entities of the given category
+	 * Retrieves the name of the registered entities of the given category.
 	 * 
 	 * @param categoryName
 	 * @return entities names
@@ -98,7 +102,7 @@ public class CommandActions {
 	}
 
 	/**
-	 * Retrieves the data of the given category
+	 * Retrieves the data of the given category.
 	 * 
 	 * @param categoryName
 	 * @return category data
@@ -119,47 +123,37 @@ public class CommandActions {
 	}
 
 	/**
-	 * Retrieves the data of the player entity
+	 * Retrieves the data of the player entity.
 	 * 
 	 * @param source
 	 * @return player entity data
 	 */
 	public static String getSelfInfo(CommandSourceStack source) {
-		var player = FakePlayer.get(source.getLevel());
-		String categoryName = EntityScaleRegistry
-				.getCategoryName(BuiltInRegistries.ENTITY_TYPE.getKey(player.getType()));
-		var category = EntityScaleRegistry.getCategory(categoryName);
+		var player = source.getPlayer();
+
+		if (player == null)
+			return "This command can only be executed by a player.";
+
+		Identifier entityId = EntityType.getKey(player.getType());
+		String registryInfo = getEntityInfo(entityId);
+
+		if (!Main.debugLogging)
+			return registryInfo;
+
 		Set<String> dataSet = new LinkedHashSet<>();
 
-		if (category == null)
-			return "Player entity is not registered to any category";
+		dataSet.addAll(getEntityAttachment(player));
+		dataSet.addAll(getEntityAttributes(player));
 
-		dataSet.add(String.format("Category:   %s", categoryName));
-		dataSet.add(String.format("Scale Mult: %.2f", category.scale()));
-		dataSet.add(String.format("Speed Mult: %.2f", category.speed()));
-
-		if (Main.debugLogging)
-			dataSet.addAll(getEntityAttributes(player));
-
-		return "Player entity" + SEPARATOR + HYPHEN + String.join(NEW_LINE + HYPHEN, dataSet);
+		return registryInfo + NEW_LINE + HYPHEN + String.join(NEW_LINE + HYPHEN, dataSet);
 	}
 
 	/**
-	 * Retrieves the data of the given entity
-	 * 
-	 * @param entityName
-	 * @return entity data
-	 */
-	public static String getEntityInfo(String entityName) {
-		return getEntityInfo(null, entityName);
-	}
-
-	/**
-	 * Retrieves the data of the given entity
+	 * Retrieves the data of the living given entity.
 	 * 
 	 * @param source
 	 * @param entityName
-	 * @return entity data
+	 * @return living entity data
 	 */
 	public static String getEntityInfo(CommandSourceStack source, String entityName) {
 		Identifier entityId;
@@ -170,12 +164,37 @@ public class CommandActions {
 			return "Unknown entity: " + entityName;
 		}
 
+		String registryInfo = getEntityInfo(entityId);
+
+		if (!Main.debugLogging)
+			return registryInfo;
+
+		LivingEntity livingEntity = findNearestEntity(source, entityId);
+
+		if (livingEntity == null)
+			return "No loaded " + entityName + " found nearby.";
+
+		Set<String> dataSet = new LinkedHashSet<>();
+
+		dataSet.addAll(getEntityAttachment(livingEntity));
+		dataSet.addAll(getEntityAttributes(livingEntity));
+
+		return registryInfo + NEW_LINE + HYPHEN + String.join(NEW_LINE + HYPHEN, dataSet);
+	}
+
+	/**
+	 * Retrieves the data of the given entity id.
+	 * 
+	 * @param entityId
+	 * @return entity data
+	 */
+	public static String getEntityInfo(Identifier entityId) {
 		String categoryName = EntityScaleRegistry.getCategoryName(entityId);
 		var data = EntityScaleRegistry.getEntityScaleData(entityId);
 		Set<String> dataSet = new LinkedHashSet<>();
 
 		if (data == null)
-			return "Entity " + entityName + " is not registered";
+			return "Entity " + entityId + " is not registered";
 
 		dataSet.add(String.format("Category:   %s", (categoryName != null ? categoryName : "None (Entity override)")));
 		dataSet.add(String.format("Scale Mult: %.2f", data.scale()));
@@ -183,49 +202,102 @@ public class CommandActions {
 		dataSet.add(String.format("Health Mult: %.2f", data.health()));
 		dataSet.add(String.format("Attack Mult: %.2f", data.attack()));
 
-		if (source != null && Main.debugLogging) {
-			EntityType<?> entityType = BuiltInRegistries.ENTITY_TYPE.getValue(entityId);
-
-			if (entityType != null) {
-				Entity entity = entityType.create(source.getServer().overworld(), EntitySpawnReason.COMMAND);
-
-				if (entity instanceof LivingEntity livingEntity)
-					dataSet.addAll(getEntityAttributes(livingEntity));
-
-				if (entity != null)
-					entity.discard();
-			}
-		}
-
-		return "Entity " + entityName + SEPARATOR + HYPHEN + String.join(NEW_LINE + HYPHEN, dataSet);
+		return "Entity " + entityId + SEPARATOR + HYPHEN + String.join(NEW_LINE + HYPHEN, dataSet);
 	}
 
 	/**
-	 * Retrieves the attributes of the given living entity
+	 * Find the nearest living entity by its entity id.
+	 * 
+	 * @param source
+	 * @param entityId
+	 * @return living entity
+	 */
+	private static LivingEntity findNearestEntity(CommandSourceStack source, Identifier entityId) {
+		double nearestDistance = Double.MAX_VALUE;
+		ServerLevel level = source.getLevel();
+		LivingEntity nearestEntity = null;
+
+		for (Entity entity : level.getAllEntities()) {
+			if (!(entity instanceof LivingEntity livingEntity))
+				continue;
+
+			var entityType = livingEntity.getType();
+
+			if (!EntityType.getKey(entityType).equals(entityId))
+				continue;
+
+			double distance = livingEntity.distanceToSqr(source.getPosition());
+
+			if (distance < nearestDistance) {
+				nearestDistance = distance;
+				nearestEntity = livingEntity;
+			}
+		}
+
+		return nearestEntity;
+
+	}
+
+	/**
+	 * Retrieves the attachment of the given living entity.
+	 * 
+	 * @param livingEntity
+	 * @return entity attachment
+	 */
+	private static Set<String> getEntityAttachment(LivingEntity livingEntity) {
+		Set<String> dataSet = new LinkedHashSet<>();
+		var attachment = EntityScaleAttachment.SCALE_DATA;
+		boolean attached = livingEntity.hasAttached(attachment);
+
+		if (attached) {
+			EntityScaleData data = livingEntity.getAttached(attachment);
+
+			dataSet.add("Attachment-");
+			dataSet.add(String.format("Scale Mult: %.2f", data.scale()));
+			dataSet.add(String.format("Speed Mult: %.2f", data.speed()));
+			dataSet.add(String.format("Health Mult: %.2f", data.health()));
+			dataSet.add(String.format("Attack Mult: %.2f", data.attack()));
+		} else
+			dataSet.add("No Attachment!-");
+
+		return dataSet;
+	}
+
+	/**
+	 * Retrieves the attributes of the given living entity.
 	 * 
 	 * @param livingEntity
 	 * @return entity attributes
 	 */
 	private static Set<String> getEntityAttributes(LivingEntity livingEntity) {
 		Set<String> dataSet = new LinkedHashSet<>();
-		EntityDimensions dimensions = livingEntity.getDimensions(Pose.STANDING), scaledDimensions;
-		double healthValue = livingEntity.getAttributeValue(Attributes.MAX_HEALTH);
-		boolean hasAttack = livingEntity.getAttribute(Attributes.ATTACK_DAMAGE) != null;
-		double attackValue = hasAttack ? livingEntity.getAttributeValue(Attributes.ATTACK_DAMAGE) : 0;
-		double speedValue = getSpeedValue(livingEntity);
+		Entity tempEntity = (livingEntity instanceof Player) ? FakePlayer.get((ServerLevel) livingEntity.level())
+				: livingEntity.getType().create(livingEntity.level(), EntitySpawnReason.COMMAND);
 
-		EntityScaleHandler.apply(livingEntity);
-		livingEntity.refreshDimensions();
+		if (tempEntity instanceof LivingEntity tempLivingEntity) {
+			EntityDimensions dimensions = tempLivingEntity.getDimensions(Pose.STANDING);
+			double healthValue = tempLivingEntity.getAttributeValue(Attributes.MAX_HEALTH);
+			boolean hasAttack = tempLivingEntity.getAttribute(Attributes.ATTACK_DAMAGE) != null;
+			double attackValue = hasAttack ? tempLivingEntity.getAttributeValue(Attributes.ATTACK_DAMAGE) : 0;
+			double speedValue = getSpeedValue(tempLivingEntity);
 
-		scaledDimensions = livingEntity.getDimensions(Pose.STANDING);
-		dataSet.add(String.format("Dimensions: %.2fW x %.2fH -> %.2fW x %.2fH", dimensions.width(), dimensions.height(),
-				scaledDimensions.width(), scaledDimensions.height()));
-		dataSet.add(String.format("Health:     %.2f -> %.2f", healthValue,
-				livingEntity.getAttributeValue(Attributes.MAX_HEALTH)));
-		if (hasAttack)
-			dataSet.add(String.format("Attack:     %.2f -> %.2f", attackValue,
-					livingEntity.getAttributeValue(Attributes.ATTACK_DAMAGE)));
-		dataSet.add(String.format("Speed:      %.2f -> %.2f", speedValue, getSpeedValue(livingEntity)));
+			EntityDimensions scaledDimensions = livingEntity.getDimensions(Pose.STANDING);
+
+			dataSet.add("Attributes-");
+			dataSet.add(String.format("Dimensions: %.2fW x %.2fH -> %.2fW x %.2fH", dimensions.width(),
+					dimensions.height(), scaledDimensions.width(), scaledDimensions.height()));
+			dataSet.add(String.format("Health:     %.2f -> %.2f", healthValue,
+					livingEntity.getAttributeValue(Attributes.MAX_HEALTH)));
+
+			if (hasAttack)
+				dataSet.add(String.format("Attack:     %.2f -> %.2f", attackValue,
+						livingEntity.getAttributeValue(Attributes.ATTACK_DAMAGE)));
+
+			dataSet.add(String.format("Speed:      %.2f -> %.2f", speedValue, getSpeedValue(livingEntity)));
+		}
+
+		if (tempEntity != null)
+			tempEntity.discard();
 
 		return dataSet;
 	}
