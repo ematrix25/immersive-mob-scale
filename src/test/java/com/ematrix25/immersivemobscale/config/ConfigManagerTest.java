@@ -17,7 +17,7 @@ import org.junit.jupiter.api.TestInstance;
 
 import com.ematrix25.immersivemobscale.BaseTest;
 import com.ematrix25.immersivemobscale.scale.model.EntityScaleCategory;
-import com.ematrix25.immersivemobscale.scale.model.EntityScaleData;
+import com.ematrix25.immersivemobscale.scale.model.EntityScaleConfig;
 
 /**
  * Tests loading, creation and validation behavior of ConfigManager code.
@@ -78,9 +78,10 @@ public class ConfigManagerTest extends BaseTest {
 		assertTrue(categories.containsKey("tiny_insects"));
 
 		EntityScaleCategory category = categories.get("tiny_insects");
+		var config = category.config();
 
-		assertEquals(0.10f, category.scale());
-		assertEquals(1.30f, category.speed());
+		assertTrue(config.scale().matches(0.10f));
+		assertTrue(config.speed().matches(1.30f));
 		assertEquals("minecraft:silverfish", category.entities().iterator().next());
 	}
 
@@ -91,17 +92,17 @@ public class ConfigManagerTest extends BaseTest {
 	@DisplayName("Loading of entities config")
 	public void shouldLoadEntitiesConfig() {
 		ConfigManager.loadConfig(ConfigType.ENTITIES);
-		Map<String, EntityScaleData> entities = ConfigManager.getConfig(ConfigType.ENTITIES);
+		Map<String, EntityScaleConfig> entities = ConfigManager.getConfig(ConfigType.ENTITIES);
 
 		assertNotNull(entities);
 		assertFalse(entities.isEmpty());
 		assertTrue(entities.containsKey("minecraft:ender_dragon"));
 
-		EntityScaleData data = entities.get("minecraft:ender_dragon");
+		EntityScaleConfig config = entities.get("minecraft:ender_dragon");
 
-		assertEquals(1.30f, data.scale());
-		assertEquals(0.80f, data.speed());
-		assertEquals(4.00f, data.health());
-		assertEquals(2.50f, data.attack());
+		assertTrue(config.scale().matches(1.30f));
+		assertTrue(config.speed().matches(0.80f));
+		assertTrue(config.health().matches(4.00f));
+		assertTrue(config.attack().matches(2.50f));
 	}
 }

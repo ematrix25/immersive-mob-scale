@@ -1,7 +1,7 @@
 package com.ematrix25.immersivemobscale.scale;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -11,6 +11,7 @@ import org.junit.jupiter.api.TestInstance;
 import com.ematrix25.immersivemobscale.BaseTest;
 import com.ematrix25.immersivemobscale.config.ConfigType;
 import com.ematrix25.immersivemobscale.scale.model.EntityScaleCategory;
+import com.ematrix25.immersivemobscale.scale.model.EntityScaleConfig;
 import com.ematrix25.immersivemobscale.scale.model.EntityScaleData;
 
 import net.minecraft.resources.Identifier;
@@ -37,10 +38,11 @@ public class EntityScaleRegistryTest extends BaseTest {
 	@DisplayName("Registry should map entity ids to categories")
 	public void shouldRegisterEntityCategories() {
 		EntityScaleCategory category = EntityScaleRegistry.getCategory(Identifier.parse("minecraft:silverfish"));
+		var config = category.config();
 
 		assertNotNull(category);
-		assertEquals(0.10f, category.scale());
-		assertEquals(1.30f, category.speed());
+		assertTrue(config.scale().matches(0.10f));
+		assertTrue(config.speed().matches(1.30f));
 	}
 
 	/**
@@ -49,27 +51,30 @@ public class EntityScaleRegistryTest extends BaseTest {
 	@Test
 	@DisplayName("Registry should map entity ids")
 	public void shouldRegisterEntities() {
-		EntityScaleData data = EntityScaleRegistry.getEntityScaleData(Identifier.parse("minecraft:ender_dragon"));
+		EntityScaleConfig config = EntityScaleRegistry.getEntityScaleConfig(Identifier.parse("minecraft:ender_dragon"));
 
-		assertNotNull(data);
-		assertEquals(1.30f, data.scale());
-		assertEquals(0.80f, data.speed());
-		assertEquals(4.00f, data.health());
-		assertEquals(2.50f, data.attack());
+		assertNotNull(config);
+		assertTrue(config.scale().matches(1.30f));
+		assertTrue(config.speed().matches(0.80f));
+		assertTrue(config.health().matches(4.00f));
+		assertTrue(config.attack().matches(2.50f));
 	}
-	
+
 	/**
 	 * Tests fallback from category to entity data.
 	 */
 	@Test
 	@DisplayName("Registry should fallback to category data")
 	public void shouldFallbackToCategoryData() {
-		EntityScaleData data = EntityScaleRegistry.getEntityScaleData(Identifier.parse("minecraft:silverfish"));
+		EntityScaleConfig config = EntityScaleRegistry.getEntityScaleConfig(Identifier.parse("minecraft:silverfish"));
 
-		assertNotNull(data);
-		assertEquals(0.10f, data.scale());
-		assertEquals(1.30f, data.speed());
-		assertEquals(0.10f, data.health());
-		assertEquals(0.10f, data.attack());
+		assertNotNull(config);
+
+		EntityScaleData data = config.generate();
+
+		assertTrue(config.scale().matches(data.scale()));
+		assertTrue(config.speed().matches(data.speed()));
+		assertTrue(config.scale().matches(data.health()));
+		assertTrue(config.scale().matches(data.attack()));
 	}
 }

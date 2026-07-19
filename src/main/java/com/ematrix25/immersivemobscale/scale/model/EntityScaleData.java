@@ -13,14 +13,4 @@ public record EntityScaleData(float scale, float speed, float health, float atta
 					Codec.FLOAT.fieldOf("health").forGetter(EntityScaleData::health),
 					Codec.FLOAT.fieldOf("attack").forGetter(EntityScaleData::attack))
 			.apply(instance, EntityScaleData::new));
-
-	/**
-	 * Convert category entity data to a simple entity scale data.
-	 * 
-	 * @param category
-	 * @return entity scale data
-	 */
-	public static EntityScaleData of(EntityScaleCategory category) {
-		return new EntityScaleData(category.scale(), category.speed(), category.scale(), category.scale());
-	}
 }

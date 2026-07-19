@@ -1,36 +1,36 @@
 {
 	"tiny_insects": {
-		"scale": 0.10,
+		"scale": [0.10, 0.25],
 		"speed": 1.30,
 		"entities": ["minecraft:silverfish", "minecraft:endermite"]
 	},
 	"small_insects": {
-		"scale": 0.18,
+		"scale": [0.15, 0.30],
 		"speed": 1.27,
 		"entities": ["minecraft:bee"]
 	},
 	"large_insects": {
-		"scale": 0.24,
+		"scale": [0.20, 0.35],
 		"speed": 1.25,
 		"entities": ["minecraft:spider", "minecraft:cave_spider"]
 	},
 	"amphibians": {
-		"scale": 0.35,
+		"scale": [0.25, 0.40],
 		"speed": 1.21,
 		"entities": ["minecraft:frog", "minecraft:tadpole"]
 	},
 	"small_animals": {
-		"scale": 0.68,
+		"scale": [0.70, 0.85],
 		"speed": 1.09,
 		"entities": ["minecraft:rabbit", "minecraft:parrot", "minecraft:fox", "minecraft:cat"]
 	},
 	"aquatic_animals": {
-		"scale": 0.88,
+		"scale": [0.80, 0.95],
 		"speed": 1.02,
 		"entities": ["minecraft:cod", "minecraft:salmon", "minecraft:turtle", "minecraft:squid"]
 	},
 	"medium_animals": {
-		"scale": 0.93,
+		"scale": [0.85, 1.00],
 		"speed": 1.00,
 		"entities": ["minecraft:pig", "minecraft:sheep", "minecraft:cow", "minecraft:wolf"]
 	}

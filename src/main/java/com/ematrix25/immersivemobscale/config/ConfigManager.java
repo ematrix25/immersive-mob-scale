@@ -15,8 +15,12 @@ import org.slf4j.LoggerFactory;
 
 import com.ematrix25.immersivemobscale.Main;
 import com.ematrix25.immersivemobscale.scale.model.EntityScaleCategory;
-import com.ematrix25.immersivemobscale.scale.model.EntityScaleData;
+import com.ematrix25.immersivemobscale.scale.model.EntityScaleConfig;
+import com.ematrix25.immersivemobscale.scale.model.ScaleValue;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializer;
 
 import net.minecraft.resources.Identifier;
 
@@ -25,7 +29,14 @@ import net.minecraft.resources.Identifier;
  */
 public class ConfigManager {
 	private static final String DEFAULT_DIR_NAME = "/default_config/";
-	private static final Gson GSON = new Gson();
+	private static final Gson GSON = new GsonBuilder()
+			.registerTypeAdapter(ScaleValue.class, (JsonDeserializer<ScaleValue>) (json, _, _) -> {
+				if (json.isJsonPrimitive())
+					return new ScaleValue(json.getAsFloat());
+
+				JsonArray array = json.getAsJsonArray();
+				return new ScaleValue(array.get(0).getAsFloat(), array.get(1).getAsFloat());
+			}).setPrettyPrinting().create();
 	private static final Map<ConfigType, Object> LOADED_CONFIG = new HashMap<>();
 	private static final Logger LOGGER = LoggerFactory.getLogger(Main.MOD_ID);
 
@@ -110,7 +121,7 @@ public class ConfigManager {
 	private static <T> void validate(ConfigType configType, T config) {
 		switch (configType) {
 		case CATEGORIES -> validateCategories((Map<String, EntityScaleCategory>) config);
-		case ENTITIES -> validateEntities((Map<String, EntityScaleData>) config);
+		case ENTITIES -> validateEntities((Map<String, EntityScaleConfig>) config);
 		}
 	}
 
@@ -123,16 +134,16 @@ public class ConfigManager {
 		Set<Identifier> registeredEntities = new HashSet<>();
 
 		categories.forEach((name, category) -> {
-			if (category.scale() < 0.10f || category.scale() > 5.00f)
-				LOGGER.warn("Bad scale value {} for category {}. Best use values between 0.1 and 5.0", category.scale(),
-						name);
-			if (category.speed() < 0.50f || category.speed() > 1.50f)
-				LOGGER.warn("Bad speed value {} for category {}. Best use values between 0.5 and 1.5", category.speed(),
-						name);
+			var config = category.config();
+
+			validateScaleValue(config.scale(), "scale", name, 0.10f, 5.00f);
+			validateScaleValue(config.speed(), "speed", name, 0.50f, 1.50f);
+
 			if (category.entities() == null || category.entities().isEmpty()) {
 				LOGGER.warn("Category {} has no entities", name);
 				return;
 			}
+
 			for (String entity : category.entities()) {
 				Identifier entityId = Identifier.tryParse(entity);
 				if (entityId == null)
@@ -148,23 +159,37 @@ public class ConfigManager {
 	 * 
 	 * @param entities
 	 */
-	private static void validateEntities(Map<String, EntityScaleData> entities) {
-		entities.forEach((name, data) -> {
-			if (data.scale() < 0.10f || data.scale() > 5.00f)
-				LOGGER.warn("Bad scale value {} for category {}. Best use values between 0.1 and 5.0", data.scale(),
-						name);
-			if (data.speed() < 0.50f || data.speed() > 1.50f)
-				LOGGER.warn("Bad speed value {} for category {}. Best use values between 0.5 and 1.5", data.speed(),
-						name);
-			if (data.health() < 0.10f || data.health() > 5.00f)
-				LOGGER.warn("Bad scale value {} for category {}. Best use values between 0.1 and 5.0", data.health(),
-						name);
-			if (data.attack() < 0.10f || data.attack() > 5.00f)
-				LOGGER.warn("Bad scale value {} for category {}. Best use values between 0.1 and 5.0", data.attack(),
-						name);
+	private static void validateEntities(Map<String, EntityScaleConfig> entities) {
+		entities.forEach((name, config) -> {
+			validateScaleValue(config.scale(), "scale", name, 0.10f, 5.00f);
+			validateScaleValue(config.speed(), "speed", name, 0.50f, 1.50f);
+			validateScaleValue(config.health(), "health", name, 0.10f, 5.00f);
+			validateScaleValue(config.attack(), "attack", name, 0.10f, 5.00f);
+
 			if (Identifier.tryParse(name) == null)
 				LOGGER.warn("Entity {} is an invalid entity id", name);
 		});
+	}
+
+	/**
+	 * Validates if scale value is between limits.
+	 * 
+	 * @param value
+	 * @param valueName
+	 * @param name
+	 * @param min
+	 * @param max
+	 */
+	private static void validateScaleValue(ScaleValue value, String valueName, String name, float min, float max) {
+		if (value == null)
+			return;
+
+		float base = value.base();
+		float upper = value.max();
+
+		if ((value.isRange() && ((upper > base && (upper < min || base > max)) || upper < base))
+				|| (base < min || base > max))
+			LOGGER.warn("Bad {} value {} for {}. Best use values between {} and {}", valueName, value, name, min, max);
 	}
 
 	/**

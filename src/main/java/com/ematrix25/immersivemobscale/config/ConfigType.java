@@ -4,7 +4,7 @@ import java.lang.reflect.Type;
 import java.util.Map;
 
 import com.ematrix25.immersivemobscale.scale.model.EntityScaleCategory;
-import com.ematrix25.immersivemobscale.scale.model.EntityScaleData;
+import com.ematrix25.immersivemobscale.scale.model.EntityScaleConfig;
 import com.google.gson.reflect.TypeToken;
 
 /**
@@ -19,7 +19,7 @@ public enum ConfigType {
 	/**
 	 * Entity configuration.
 	 */
-	ENTITIES("entities", new TypeToken<Map<String, EntityScaleData>>() {
+	ENTITIES("entities", new TypeToken<Map<String, EntityScaleConfig>>() {
 	}.getType());
 
 	private final String key;

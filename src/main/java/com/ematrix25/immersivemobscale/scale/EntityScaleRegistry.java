@@ -12,7 +12,7 @@ import com.ematrix25.immersivemobscale.Main;
 import com.ematrix25.immersivemobscale.config.ConfigManager;
 import com.ematrix25.immersivemobscale.config.ConfigType;
 import com.ematrix25.immersivemobscale.scale.model.EntityScaleCategory;
-import com.ematrix25.immersivemobscale.scale.model.EntityScaleData;
+import com.ematrix25.immersivemobscale.scale.model.EntityScaleConfig;
 
 import net.minecraft.resources.Identifier;
 
@@ -25,7 +25,7 @@ public class EntityScaleRegistry {
 	private static final Logger LOGGER = LoggerFactory.getLogger(Main.MOD_ID);
 
 	private static Map<String, EntityScaleCategory> categories = new HashMap<>();
-	private static Map<String, EntityScaleData> entities = new HashMap<>();
+	private static Map<String, EntityScaleConfig> entities = new HashMap<>();
 
 	/**
 	 * Loads entity categories into runtime registry.
@@ -76,23 +76,23 @@ public class EntityScaleRegistry {
 	}
 
 	/**
-	 * Gets a scale data by entity id.
+	 * Gets a scale configuration by entity id.
 	 * 
 	 * @param entityId
-	 * @return entity scale data
+	 * @return entity scale configuration
 	 */
-	public static EntityScaleData getEntityScaleData(Identifier entityId) {
-		EntityScaleData entityData = entities.get(entityId.toString());
+	public static EntityScaleConfig getEntityScaleConfig(Identifier entityId) {
+		EntityScaleConfig entityConfig = entities.get(entityId.toString());
 
-		if (entityData != null)
-			return entityData;
+		if (entityConfig != null)
+			return entityConfig;
 
 		EntityScaleCategory category = getCategory(entityId);
 
 		if (category == null)
 			return null;
 
-		return EntityScaleData.of(category);
+		return category.config();
 	}
 
 	/**

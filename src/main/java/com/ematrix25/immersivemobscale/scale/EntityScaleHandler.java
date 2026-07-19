@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ematrix25.immersivemobscale.Main;
+import com.ematrix25.immersivemobscale.scale.model.EntityScaleConfig;
 import com.ematrix25.immersivemobscale.scale.model.EntityScaleData;
 
 import net.minecraft.core.Holder;
@@ -34,11 +35,11 @@ public class EntityScaleHandler {
 			return;
 
 		Identifier entityId = EntityType.getKey(entity.getType());
-		EntityScaleData configData = EntityScaleRegistry.getEntityScaleData(entityId);
+		EntityScaleConfig config = EntityScaleRegistry.getEntityScaleConfig(entityId);
 
 		var attachment = EntityScaleAttachment.SCALE_DATA;
 
-		if (configData == null) {
+		if (config == null) {
 			if (entity.hasAttached(attachment))
 				entity.removeAttached(attachment);
 
@@ -56,14 +57,25 @@ public class EntityScaleHandler {
 			return;
 		}
 
-		if (!(entity.hasAttached(attachment) && entity.getAttached(attachment).equals(configData))) {
-			entity.setAttached(attachment, configData);
+		EntityScaleData data;
 
+		if (!entity.hasAttached(attachment)) {
+			data = config.generate();
+			entity.setAttached(attachment, data);
+			
 			if (Main.debugLogging)
 				LOGGER.info("Applied {} attachment to entity {}", EntityScaleAttachment.SCALE_DATA_ID, entityId);
-		}
+		} else {
+			EntityScaleData currentData = entity.getAttached(attachment);
+			data = config.update(currentData);
 
-		EntityScaleData data = entity.getAttached(attachment);
+			if (!currentData.equals(data)) {
+				entity.setAttached(attachment, data);
+
+				if (Main.debugLogging)
+					LOGGER.info("Updated {} attachment to entity {}", EntityScaleAttachment.SCALE_DATA_ID, entityId);
+			}
+		}
 
 		updateModifier(entity, Attributes.MAX_HEALTH, HEALTH_MODIFIER_ID, data.health());
 		updateModifier(entity, Attributes.ATTACK_DAMAGE, DAMAGE_MODIFIER_ID, data.attack());

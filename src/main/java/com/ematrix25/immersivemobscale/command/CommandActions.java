@@ -13,6 +13,7 @@ import com.ematrix25.immersivemobscale.scale.EntityScaleAttachment;
 import com.ematrix25.immersivemobscale.scale.EntityScaleHandler;
 import com.ematrix25.immersivemobscale.scale.EntityScaleRegistry;
 import com.ematrix25.immersivemobscale.scale.model.EntityScaleData;
+import com.ematrix25.immersivemobscale.scale.model.ScaleValue;
 
 import net.fabricmc.fabric.api.entity.FakePlayer;
 import net.minecraft.commands.CommandSourceStack;
@@ -102,7 +103,7 @@ public class CommandActions {
 	}
 
 	/**
-	 * Retrieves the data of the given category.
+	 * Retrieves the configuration of the given category.
 	 * 
 	 * @param categoryName
 	 * @return category data
@@ -116,8 +117,8 @@ public class CommandActions {
 		Set<String> dataSet = new LinkedHashSet<>();
 
 		dataSet.add(String.format("Entities: %d", category.entities().size()));
-		dataSet.add(String.format("Scale:    %.2f", category.scale()));
-		dataSet.add(String.format("Speed:    %.2f", category.speed()));
+		dataSet.add(String.format("Scale:    %s", category.scale()));
+		dataSet.add(String.format("Speed:    %s", category.speed()));
 
 		return "Category " + categoryName + SEPARATOR + HYPHEN + String.join(NEW_LINE + HYPHEN, dataSet);
 	}
@@ -190,17 +191,21 @@ public class CommandActions {
 	 */
 	public static String getEntityInfo(Identifier entityId) {
 		String categoryName = EntityScaleRegistry.getCategoryName(entityId);
-		var data = EntityScaleRegistry.getEntityScaleData(entityId);
+		var config = EntityScaleRegistry.getEntityScaleConfig(entityId);
 		Set<String> dataSet = new LinkedHashSet<>();
 
-		if (data == null)
+		if (config == null)
 			return "Entity " + entityId + " is not registered";
 
+		ScaleValue health, attack;
+
 		dataSet.add(String.format("Category:   %s", (categoryName != null ? categoryName : "None (Entity override)")));
-		dataSet.add(String.format("Scale Mult: %.2f", data.scale()));
-		dataSet.add(String.format("Speed Mult: %.2f", data.speed()));
-		dataSet.add(String.format("Health Mult: %.2f", data.health()));
-		dataSet.add(String.format("Attack Mult: %.2f", data.attack()));
+		dataSet.add(String.format("Scale Mult: %s", config.scale()));
+		dataSet.add(String.format("Speed Mult: %s", config.speed()));
+		health = config.health() != null ? config.health() : config.scale();
+		dataSet.add(String.format("Health Mult: %s", health));
+		attack = config.attack() != null ? config.attack() : config.scale();
+		dataSet.add(String.format("Attack Mult: %s", attack));
 
 		return "Entity " + entityId + SEPARATOR + HYPHEN + String.join(NEW_LINE + HYPHEN, dataSet);
 	}
