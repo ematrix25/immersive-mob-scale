@@ -17,17 +17,10 @@
 	"entrypoints": {
 		"main": [
 			"com.ematrix25.immersivemobscale.Main"
-		],
-		"client": [
-			"com.ematrix25.immersivemobscale.Client"
 		]
 	},
 	"mixins": [
-		"immersivemobscale.mixins.json",
-		{
-			"config": "immersivemobscale.client.mixins.json",
-			"environment": "client"
-		}
+		"immersivemobscale.mixins.json"
 	],
 	"depends": {
 		"fabricloader": ">=0.19.2",

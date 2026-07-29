@@ -62,7 +62,7 @@ public class EntityScaleHandler {
 		if (!entity.hasAttached(attachment)) {
 			data = config.generate();
 			entity.setAttached(attachment, data);
-			
+
 			if (Main.debugLogging)
 				LOGGER.info("Applied {} attachment to entity {}", EntityScaleAttachment.SCALE_DATA_ID, entityId);
 		} else {
@@ -132,5 +132,18 @@ public class EntityScaleHandler {
 		double amount = attributeInstance.getBaseValue() * (multiplier - 1.0);
 		attributeInstance
 				.addPermanentModifier(new AttributeModifier(modifierId, amount, AttributeModifier.Operation.ADD_VALUE));
+	}
+
+	/**
+	 * Returns the current scale multiplier applied to an entity.
+	 * 
+	 * @param entity
+	 * @return current scale, or default 1.0 if there is no scale
+	 */
+	public static double getCurrentScale(LivingEntity entity) {
+		if (entity == null || !entity.hasAttached(EntityScaleAttachment.SCALE_DATA))
+			return 1.0;
+
+		return entity.getAttached(EntityScaleAttachment.SCALE_DATA).scale();
 	}
 }
