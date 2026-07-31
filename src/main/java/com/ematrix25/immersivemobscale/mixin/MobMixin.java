@@ -32,7 +32,7 @@ public abstract class MobMixin {
 
 		if (box == null)
 			return;
-		
+
 		Mob mob = (Mob) (Object) this;
 		double scale = EntityScaleHandler.getCurrentScale(mob);
 		double scaledExpansion = horizontalExpansion * (scale - 1.0);
@@ -40,8 +40,8 @@ public abstract class MobMixin {
 
 		if (Main.debugLogging)
 			LOGGER.info(
-					"Mob '{}' | scale = {} | expansion = {} | scaled expansion = {} | original attack box = {} | final attack box = {} ",
-					mob.getType(), scale, horizontalExpansion, scaledExpansion, box, modBox);
+					"Mob '{}': scale = {}; expansion = {}; scaledExpansion = {}; attackBox = {} => {} ",
+					mob.getType(), scale, horizontalExpansion, horizontalExpansion + scaledExpansion, box, modBox);
 
 		cir.setReturnValue(modBox);
 	}

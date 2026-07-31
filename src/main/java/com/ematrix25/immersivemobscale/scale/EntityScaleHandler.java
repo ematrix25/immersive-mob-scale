@@ -44,9 +44,14 @@ public class EntityScaleHandler {
 				entity.removeAttached(attachment);
 
 			updateModifier(entity, Attributes.MAX_HEALTH, HEALTH_MODIFIER_ID);
+			updateModifier(entity, Attributes.ARMOR, HEALTH_MODIFIER_ID);
+			updateModifier(entity, Attributes.ARMOR_TOUGHNESS, HEALTH_MODIFIER_ID);
+			updateModifier(entity, Attributes.KNOCKBACK_RESISTANCE, HEALTH_MODIFIER_ID);
 			updateModifier(entity, Attributes.ATTACK_DAMAGE, DAMAGE_MODIFIER_ID);
+			updateModifier(entity, Attributes.ATTACK_KNOCKBACK, DAMAGE_MODIFIER_ID);
 			updateModifier(entity, Attributes.MOVEMENT_SPEED, SPEED_MODIFIER_ID);
 			updateModifier(entity, Attributes.FLYING_SPEED, SPEED_MODIFIER_ID);
+			updateModifier(entity, Attributes.ATTACK_SPEED, SPEED_MODIFIER_ID);
 			updateModifier(entity, Attributes.SCALE, SCALE_MODIFIER_ID);
 
 			var healthAttribute = entity.getAttribute(Attributes.MAX_HEALTH);
@@ -78,9 +83,14 @@ public class EntityScaleHandler {
 		}
 
 		updateModifier(entity, Attributes.MAX_HEALTH, HEALTH_MODIFIER_ID, data.health());
+		updateModifier(entity, Attributes.ARMOR, HEALTH_MODIFIER_ID, data.health());
+		updateModifier(entity, Attributes.ARMOR_TOUGHNESS, HEALTH_MODIFIER_ID, data.health());
+		updateModifier(entity, Attributes.KNOCKBACK_RESISTANCE, HEALTH_MODIFIER_ID, data.health());
 		updateModifier(entity, Attributes.ATTACK_DAMAGE, DAMAGE_MODIFIER_ID, data.attack());
+		updateModifier(entity, Attributes.ATTACK_KNOCKBACK, DAMAGE_MODIFIER_ID, data.attack());
 		updateModifier(entity, Attributes.MOVEMENT_SPEED, SPEED_MODIFIER_ID, data.speed());
 		updateModifier(entity, Attributes.FLYING_SPEED, SPEED_MODIFIER_ID, data.speed());
+		updateModifier(entity, Attributes.ATTACK_SPEED, SPEED_MODIFIER_ID, data.speed());
 		updateModifier(entity, Attributes.SCALE, SCALE_MODIFIER_ID, data.scale());
 
 		var healthAttribute = entity.getAttribute(Attributes.MAX_HEALTH);

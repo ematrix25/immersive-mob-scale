@@ -17,6 +17,7 @@ import com.ematrix25.immersivemobscale.scale.model.ScaleValue;
 
 import net.fabricmc.fabric.api.entity.FakePlayer;
 import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.core.Holder;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
@@ -25,6 +26,7 @@ import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Pose;
+import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 
@@ -120,6 +122,8 @@ public class CommandActions {
 		dataSet.add(String.format("Scale:    %s", category.scale()));
 		dataSet.add(String.format("Speed:    %s", category.speed()));
 
+		dataSet.removeIf(str -> str == null || str.isBlank());
+
 		return "Category " + categoryName + SEPARATOR + HYPHEN + String.join(NEW_LINE + HYPHEN, dataSet);
 	}
 
@@ -145,6 +149,8 @@ public class CommandActions {
 
 		dataSet.addAll(getEntityAttachment(player));
 		dataSet.addAll(getEntityAttributes(player));
+
+		dataSet.removeIf(str -> str == null || str.isBlank());
 
 		return registryInfo + NEW_LINE + HYPHEN + String.join(NEW_LINE + HYPHEN, dataSet);
 	}
@@ -180,6 +186,8 @@ public class CommandActions {
 		dataSet.addAll(getEntityAttachment(livingEntity));
 		dataSet.addAll(getEntityAttributes(livingEntity));
 
+		dataSet.removeIf(str -> str == null || str.isBlank());
+
 		return registryInfo + NEW_LINE + HYPHEN + String.join(NEW_LINE + HYPHEN, dataSet);
 	}
 
@@ -206,6 +214,8 @@ public class CommandActions {
 		dataSet.add(String.format("Health Mult: %s", health));
 		attack = config.attack() != null ? config.attack() : config.scale();
 		dataSet.add(String.format("Attack Mult: %s", attack));
+
+		dataSet.removeIf(str -> str == null || str.isBlank());
 
 		return "Entity " + entityId + SEPARATOR + HYPHEN + String.join(NEW_LINE + HYPHEN, dataSet);
 	}
@@ -265,6 +275,8 @@ public class CommandActions {
 		} else
 			dataSet.add("No Attachment!-");
 
+		dataSet.removeIf(str -> str == null || str.isBlank());
+
 		return dataSet;
 	}
 
@@ -281,41 +293,55 @@ public class CommandActions {
 
 		if (tempEntity instanceof LivingEntity tempLivingEntity) {
 			EntityDimensions dimensions = tempLivingEntity.getDimensions(Pose.STANDING);
-			double healthValue = tempLivingEntity.getAttributeValue(Attributes.MAX_HEALTH);
-			boolean hasAttack = tempLivingEntity.getAttribute(Attributes.ATTACK_DAMAGE) != null;
-			double attackValue = hasAttack ? tempLivingEntity.getAttributeValue(Attributes.ATTACK_DAMAGE) : 0;
-			double speedValue = getSpeedValue(tempLivingEntity);
-
 			EntityDimensions scaledDimensions = livingEntity.getDimensions(Pose.STANDING);
 
 			dataSet.add("Attributes-");
+			dataSet.add(getAttributeLine("Scale", tempLivingEntity, livingEntity, Attributes.SCALE));
 			dataSet.add(String.format("Dimensions: %.2fW x %.2fH -> %.2fW x %.2fH", dimensions.width(),
 					dimensions.height(), scaledDimensions.width(), scaledDimensions.height()));
-			dataSet.add(String.format("Health:     %.2f -> %.2f", healthValue,
-					livingEntity.getAttributeValue(Attributes.MAX_HEALTH)));
-
-			if (hasAttack)
-				dataSet.add(String.format("Attack:     %.2f -> %.2f", attackValue,
-						livingEntity.getAttributeValue(Attributes.ATTACK_DAMAGE)));
-
-			dataSet.add(String.format("Speed:      %.2f -> %.2f", speedValue, getSpeedValue(livingEntity)));
+			dataSet.add(getAttributeLine("Health", tempLivingEntity, livingEntity, Attributes.MAX_HEALTH));
+			dataSet.add(getAttributeLine("Armor", tempLivingEntity, livingEntity, Attributes.ARMOR));
+			dataSet.add(
+					getAttributeLine("Armor Toughness", tempLivingEntity, livingEntity, Attributes.ARMOR_TOUGHNESS));
+			dataSet.add(getAttributeLine("Knockback Resistance", tempLivingEntity, livingEntity,
+					Attributes.KNOCKBACK_RESISTANCE));
+			dataSet.add(getAttributeLine("Attack", tempLivingEntity, livingEntity, Attributes.ATTACK_DAMAGE));
+			dataSet.add(
+					getAttributeLine("Attack Knockback", tempLivingEntity, livingEntity, Attributes.ATTACK_KNOCKBACK));
+			dataSet.add(getAttributeLine("Speed", tempLivingEntity, livingEntity, Attributes.MOVEMENT_SPEED));
+			dataSet.add(getAttributeLine("Flying Speed", tempLivingEntity, livingEntity, Attributes.FLYING_SPEED));
+			dataSet.add(getAttributeLine("Attack Speed", tempLivingEntity, livingEntity, Attributes.ATTACK_SPEED));
 		}
 
 		if (tempEntity != null)
 			tempEntity.discard();
 
+		dataSet.removeIf(str -> str == null || str.isBlank());
+
 		return dataSet;
 	}
 
 	/**
-	 * Retrieves the speed attribute value of a given living entity.
+	 * Creates a text line of attributes before and after scale.
 	 * 
-	 * @return speed attribute value
+	 * @param name
+	 * @param baseEntity
+	 * @param scaledEntity
+	 * @param attribute
+	 * @return text line
 	 */
-	private static double getSpeedValue(LivingEntity livingEntity) {
-		return livingEntity.getAttribute(Attributes.FLYING_SPEED) == null
-				? livingEntity.getAttributeValue(Attributes.MOVEMENT_SPEED)
-				: livingEntity.getAttributeValue(Attributes.FLYING_SPEED);
+	private static String getAttributeLine(String name, LivingEntity baseEntity, LivingEntity scaledEntity,
+			Holder<Attribute> attribute) {
+		if (baseEntity.getAttribute(attribute) == null)
+			return null;
+
+		double baseValue = baseEntity.getAttributeValue(attribute);
+		double scaledValue = scaledEntity.getAttributeValue(attribute);
+
+		if (baseValue == 0 && scaledValue == 0)
+			return null;
+
+		return String.format("%-20s %.2f -> %.2f", name + ":", baseValue, scaledValue);
 	}
 
 	/**
