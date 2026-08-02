@@ -13,4 +13,13 @@ public record EntityScaleData(float scale, float speed, float health, float atta
 					Codec.FLOAT.fieldOf("health").forGetter(EntityScaleData::health),
 					Codec.FLOAT.fieldOf("attack").forGetter(EntityScaleData::attack))
 			.apply(instance, EntityScaleData::new));
+
+	/**
+	 * Calculates the difficulty multiplier for the scaled entity.
+	 * 
+	 * @return difficulty multiplier
+	 */
+	public float difficultyMultiplier() {
+		return speed() * 0.2f + health() * 0.5f + attack() * 0.3f;
+	}
 }

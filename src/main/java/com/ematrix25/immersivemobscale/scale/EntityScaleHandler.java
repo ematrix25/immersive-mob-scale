@@ -156,4 +156,17 @@ public class EntityScaleHandler {
 
 		return entity.getAttached(EntityScaleAttachment.SCALE_DATA).scale();
 	}
+
+	/**
+	 * Returns the current difficulty multiplier of a scaled entity.
+	 *
+	 * @param entity
+	 * @return current difficulty multiplier, or default 1.0 if there is no scale
+	 */
+	public static double getDifficultyMultiplier(LivingEntity entity) {
+		if (entity == null || !entity.hasAttached(EntityScaleAttachment.SCALE_DATA))
+			return 1.0;
+
+		return entity.getAttached(EntityScaleAttachment.SCALE_DATA).difficultyMultiplier();
+	}
 }

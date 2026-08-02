@@ -26,7 +26,7 @@ public abstract class MobMixin {
 	 * @param horizontalExpansion
 	 * @param cir
 	 */
-	@Inject(at = @At("RETURN"), method = "getAttackBoundingBox", cancellable = true)
+	@Inject(method = "getAttackBoundingBox", at = @At("RETURN"), cancellable = true)
 	private void adjustAttackBoundingBox(double horizontalExpansion, CallbackInfoReturnable<AABB> cir) {
 		AABB box = cir.getReturnValue();
 
@@ -39,9 +39,9 @@ public abstract class MobMixin {
 		AABB modBox = box.inflate(scaledExpansion, 0.0, scaledExpansion);
 
 		if (Main.debugLogging)
-			LOGGER.info(
-					"Mob '{}': scale = {}; expansion = {}; scaledExpansion = {}; attackBox = {} => {} ",
-					mob.getType(), scale, horizontalExpansion, horizontalExpansion + scaledExpansion, box, modBox);
+			LOGGER.info("Mob '{}': scale = {}; expansion = {}; scaledExpansion = {}; attackBox = {} => {}",
+					mob.getType(), String.format("%.2f", scale), String.format("%.2f", horizontalExpansion),
+					String.format("%.2f", horizontalExpansion + scaledExpansion), box, modBox);
 
 		cir.setReturnValue(modBox);
 	}

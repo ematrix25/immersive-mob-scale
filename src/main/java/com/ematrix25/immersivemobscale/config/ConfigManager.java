@@ -189,7 +189,8 @@ public class ConfigManager {
 
 		if ((value.isRange() && ((upper > base && (upper < min || base > max)) || upper < base))
 				|| (base < min || base > max))
-			LOGGER.warn("Bad {} value {} for {}. Best use values between {} and {}", valueName, value, name, min, max);
+			LOGGER.warn("Bad {} value {} for {}. Best use values between {} and {}", valueName, value, name,
+					String.format("%.2f", min), String.format("%.2f", max));
 	}
 
 	/**
